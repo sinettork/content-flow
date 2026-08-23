@@ -1,0 +1,14 @@
+-- Seed data. Run AFTER creating at least one auth user.
+-- Replace the placeholder UUID with a real auth.users.id.
+
+-- Example (uncomment and edit):
+-- do $$
+-- declare uid uuid := '00000000-0000-0000-0000-000000000000';
+-- declare ws uuid;
+-- begin
+--   insert into workspaces (name, slug, created_by) values ('Demo Workspace','demo', uid) returning id into ws;
+--   insert into profiles (id, workspace_id, full_name, email, role)
+--     values (uid, ws, 'Demo Admin', 'admin@example.com', 'admin');
+--   insert into campaigns (workspace_id, name, owner_id)
+--     values (ws, 'Khmer New Year Promo', uid);
+-- end $$;
