@@ -1,0 +1,66 @@
+import { isSupabaseBackend } from "@/lib/backend";
+import * as mock from "@/lib/mock/auth";
+import { requireSupabase } from "@/lib/supabase/client";
+import type { Profile } from "@/types";
+
+export interface AppSession {
+  userId: string;
+  email: string;
+  createdAt: string;
+  accessToken?: string;
+}
+
+function toAppSession(session: { user: { id: string; email?: string; created_at: string }; access_token: string } | null): AppSession | null {
+  if (!session) return null;
+  return {
+    userId: session.user.id,
+    email: session.user.email ?? "",
+    createdAt: session.user.created_at,
+    accessToken: session.access_token,
+  };
+}
+
+export async function getSession(): Promise<AppSession | null> {
+  if (!isSupabaseBackend) return mock.getSession();
+  const { data, error } = await requireSupabase().auth.getSession();
+  if (error) throw error;
+  return toAppSession(data.session);
+}
+
+export function onAuthChange(listener: (session: AppSession | null) => void | Promise<void>) {
+  if (!isSupabaseBackend) return mock.onAuthChange(listener);
+  const { data } = requireSupabase().auth.onAuthStateChange((_event, session) => {
+    void listener(toAppSession(session));
+  });
+  return () => data.subscription.unsubscribe();
+}
+
+export async function signIn(email: string, password: string) {
+  if (!isSupabaseBackend) return mock.signIn(email, password);
+  const { error } = await requireSupabase().auth.signInWithPassword({ email, password });
+  return { error: error ? { message: error.message } : null };
+}
+
+export async function signOut() {
+  if (!isSupabaseBackend) return mock.signOut();
+  const { error } = await requireSupabase().auth.signOut();
+  if (error) throw error;
+}
+
+export async function sendResetEmail(email: string) {
+  if (!isSupabaseBackend) return mock.sendResetEmail(email);
+  const { error } = await requireSupabase().auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/update-password`,
+  });
+  return { error: error ? { message: error.message } : null };
+}
+
+export async function getProfileForUser(userId: string): Promise<Profile | null> {
+  if (!isSupabaseBackend) return mock.getProfileForUser(userId);
+  const client = requireSupabase();
+  const { error: invitationError } = await client.rpc("accept_my_invitation");
+  if (invitationError) throw new Error(invitationError.message);
+  const { data, error } = await client.from("profiles").select("*").eq("id", userId).maybeSingle();
+  if (error) throw error;
+  return data as Profile | null;
+}

@@ -12,7 +12,7 @@ import {
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Bot, Eye, Filter, Plus, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { BoardCard } from "@/components/board/BoardCard";
@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRole } from "@/hooks/usePermission";
+import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { MASTER_STATUSES, type MasterStatus } from "@/lib/constants";
 import { contentService, platformService, profileService, activityService } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
@@ -80,8 +81,7 @@ export function BoardPage() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  useEffect(() => {
-    (async () => {
+  const load = useCallback(async () => {
       const [list, profs] = await Promise.all([
         contentService.list({}),
         profileService.listForWorkspace(workspaceId),
@@ -90,8 +90,10 @@ export function BoardPage() {
       setProfileMap(Object.fromEntries(profs.map((p) => [p.id, p])));
 
       setPlatformMap(await platformService.listForItems(list.map((item) => item.id)));
-    })();
-  }, []);
+  }, [workspaceId]);
+
+  useEffect(() => { load(); }, [load]);
+  useWorkspaceRealtime(workspaceId, load);
 
   const grouped: Record<string, ContentItem[]> = {};
   for (const col of BOARD_COLUMNS) grouped[col] = [];

@@ -1,5 +1,5 @@
 import { Upload, Trash2, Image, FileVideo, FileText, File, Folder, FolderOpen, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
+import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { fromNow } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { assetService } from "@/services";
@@ -55,15 +56,19 @@ export function AssetsPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [assets, setAssets] = useState<ContentAsset[]>([]);
+  const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState<"all" | ContentAsset["category"]>("all");
   const [uploadCategory, setUploadCategory] = useState<ContentAsset["category"]>("design");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const list = await assetService.listForWorkspace(workspaceId);
     setAssets(list);
-  };
+    const urls = await Promise.all(list.map(async (asset) => [asset.id, await assetService.getUrl(asset)] as const));
+    setAssetUrls(Object.fromEntries(urls));
+  }, [workspaceId]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
+  useWorkspaceRealtime(workspaceId, load);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -201,7 +206,7 @@ export function AssetsPage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {visibleAssets.map((a) => {
                 const isImage = a.mime_type.startsWith("image/");
-                const url = assetService.getUrl(a);
+                const url = assetUrls[a.id];
                 const category = getCategoryMeta(getAssetCategory(a));
                 return (
                   <Card key={a.id} className="group relative overflow-hidden">

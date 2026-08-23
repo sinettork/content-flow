@@ -1,3 +1,4 @@
+import { isSupabaseBackend } from "@/lib/backend";
 import {
   PERMISSIONS,
   WORKFLOW_TRANSITIONS,
@@ -8,6 +9,8 @@ import {
   type Role,
 } from "@/lib/constants";
 import { findBy, findById, genId, getAll, insert, remove, update } from "@/lib/mock/db";
+import { requireSupabase } from "@/lib/supabase/client";
+import { deleteOne, insertOne, selectMany, selectOne, updateOne } from "@/lib/supabase/repository";
 import { activityService } from "@/services/activity-service";
 import { assetService } from "@/services/asset-service";
 import { commentService } from "@/services/comment-service";
@@ -29,6 +32,22 @@ interface ContentActor {
 
 export const contentService = {
   async list(filters: ContentFilters = {}): Promise<ContentItem[]> {
+    if (isSupabaseBackend) {
+      return selectMany<ContentItem>("content_items", (base) => {
+        let query = base.order("updated_at", { ascending: false });
+        if (filters.status && filters.status !== "all") query = query.eq("master_status", filters.status);
+        if (filters.campaign_id && filters.campaign_id !== "all") query = query.eq("campaign_id", filters.campaign_id);
+        if (filters.assigned_to && filters.assigned_to !== "all") query = query.eq("assigned_to", filters.assigned_to);
+        if (filters.search) {
+          const safe = filters.search.replace(/[,%()]/g, " ").trim();
+          if (safe) query = query.or(`title.ilike.%${safe}%,slug.ilike.%${safe}%`);
+        }
+        if (filters.platform && filters.platform !== "all") {
+          query = query.eq("content_platforms.platform_name", filters.platform).select("*,content_platforms!inner(platform_name)");
+        }
+        return query;
+      });
+    }
     let rows = getAll("content_items") as ContentItem[];
     if (filters.status && filters.status !== "all") {
       rows = rows.filter((r) => r.master_status === filters.status);
@@ -53,6 +72,7 @@ export const contentService = {
   },
 
   async get(id: string): Promise<ContentItem | null> {
+    if (isSupabaseBackend) return selectOne<ContentItem>("content_items", id);
     return (findById("content_items", id) as ContentItem | undefined) ?? null;
   },
 
@@ -75,8 +95,10 @@ export const contentService = {
       throw new Error("New content items must start in Draft.");
     }
 
-    const now = new Date().toISOString();
     const slug = input.slug ?? input.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    if (isSupabaseBackend) return insertOne<ContentItem>("content_items", { ...input, slug });
+
+    const now = new Date().toISOString();
     const row: ContentItem = {
       ...input,
       slug,
@@ -98,6 +120,7 @@ export const contentService = {
       return this.setStatus(id, patch.master_status, actor, patch);
     }
 
+    if (isSupabaseBackend) return updateOne<ContentItem>("content_items", id, patch);
     return (update("content_items", id, patch) as ContentItem | undefined) ?? null;
   },
 
@@ -118,6 +141,20 @@ export const contentService = {
     }
     if (status === "approved" && !hasMinRole(actor.role, PERMISSIONS.approveContent)) {
       throw new Error("Only managers and admins can approve content.");
+    }
+
+    if (status === "in_review") {
+      if (isSupabaseBackend) {
+        const { error } = await requireSupabase().rpc("request_content_approval", { target_content_id: id });
+        if (error) throw new Error(error.message);
+        return this.get(id);
+      }
+      const now = new Date().toISOString();
+      insert("approval_requests", {
+        id: genId("ar"), workspace_id: existing.workspace_id, content_item_id: id,
+        requested_by: actor.userId, reviewed_by: null, decision: null, decision_note: null,
+        created_at: now, decided_at: null,
+      });
     }
 
     const now = new Date().toISOString();
@@ -144,6 +181,7 @@ export const contentService = {
       patch.posted_at = null;
     }
 
+    if (isSupabaseBackend) return updateOne<ContentItem>("content_items", id, patch);
     return (update("content_items", id, patch) as ContentItem | undefined) ?? null;
   },
 
@@ -152,6 +190,7 @@ export const contentService = {
   },
 
   async remove(id: string): Promise<boolean> {
+    if (isSupabaseBackend) return deleteOne("content_items", id);
     await Promise.all([
       platformService.removeForItem(id),
       commentService.removeForItem(id),

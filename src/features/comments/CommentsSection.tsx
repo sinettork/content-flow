@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { CommentComposer } from "@/components/forms/CommentComposer";
 import { CommentList } from "@/components/tables/CommentList";
@@ -16,17 +16,17 @@ export function CommentsSection({ contentItemId, workspaceId }: CommentsSectionP
   const [comments, setComments] = useState<Comment[]>([]);
   const [profileMap, setProfileMap] = useState<Record<string, Profile>>({});
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const list = await commentService.listForItem(contentItemId);
     setComments(list);
     const ids = [...new Set(list.map((c) => c.user_id))];
     const map = await profileService.byIds(ids);
     setProfileMap(map);
-  };
+  }, [contentItemId]);
 
   useEffect(() => {
     load();
-  }, [contentItemId]);
+  }, [load]);
 
   const handleAdd = async (body: string) => {
     if (!user) return;

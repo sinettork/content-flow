@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "composite": true,
     "target": "ES2022",
     "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "strict": true
+    "strict": true,
+    "noEmit": true
   },
-  "include": ["vite.config.ts", "vite.config.d.ts", "tailwind.config.ts"]
+  "include": ["vite.config.ts", "tailwind.config.ts"]
 }

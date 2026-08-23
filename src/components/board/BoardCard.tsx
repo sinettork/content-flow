@@ -2,7 +2,6 @@ import { CalendarClock, GripVertical } from "lucide-react";
 
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { STATUS_ACCENTS } from "@/lib/constants";
 import { formatDate } from "@/lib/dates";

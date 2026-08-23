@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { CalendarToolbar } from "@/components/calendar/CalendarToolbar";
 import { PlatformLegend } from "@/components/calendar/PlatformLegend";
 import { PageHeader } from "@/components/common/PageHeader";
-import { ContentStatusBadge } from "@/components/content/ContentStatusBadge";
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

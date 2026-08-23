@@ -3,3 +3,6 @@ dist/
 .vite/
 public/
 package-lock.json
+*.d.ts
+*.tsbuildinfo
+supabase/functions/

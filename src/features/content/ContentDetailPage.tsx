@@ -1,5 +1,5 @@
 import { ArrowLeft, Pencil, Trash2, Clock, User, Briefcase, ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 
 import { CampaignBadge } from "@/components/campaigns/CampaignBadge";
@@ -16,12 +16,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CommentsSection } from "@/features/comments/CommentsSection";
 import { useRole } from "@/hooks/usePermission";
+import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import type { MasterStatus } from "@/lib/constants";
 import { formatDate, formatDateTime, fromNow } from "@/lib/dates";
-import { contentService, platformService, campaignService, profileService, activityService } from "@/services";
+import { contentService, platformService, campaignService, profileService, activityService, workflowService } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
-import type { Campaign, ContentItem, ContentPlatform, Profile, ActivityLog } from "@/types";
+import type { Campaign, ContentItem, ContentPlatform, Profile, ActivityLog, ContentVersion } from "@/types";
 
 const STATUS_LABELS: Record<MasterStatus, string> = {
   draft: "Draft", in_review: "In Review", changes_requested: "Changes Requested",
@@ -41,10 +42,11 @@ export function ContentDetailPage() {
   const [assignee, setAssignee] = useState<Profile | null>(null);
   const [creator, setCreator] = useState<Profile | null>(null);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [versions, setVersions] = useState<ContentVersion[]>([]);
   const [profileMap, setProfileMap] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!id) return;
     const content = await contentService.get(id);
     if (!content) {
@@ -54,12 +56,14 @@ export function ContentDetailPage() {
     }
     setItem(content);
 
-    const [plats, logList] = await Promise.all([
+    const [plats, logList, versionList] = await Promise.all([
       platformService.listForItem(id),
       activityService.listForItem(id),
+      workflowService.versions(id),
     ]);
     setPlatforms(plats);
     setLogs(logList);
+    setVersions(versionList);
 
     if (content.campaign_id) setCampaign(await campaignService.get(content.campaign_id));
     if (content.assigned_to) setAssignee(await profileService.get(content.assigned_to));
@@ -69,9 +73,10 @@ export function ContentDetailPage() {
     const map = await profileService.byIds(userIds);
     setProfileMap(map);
     setLoading(false);
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
+  useWorkspaceRealtime(workspaceId, load);
 
   const handleDelete = async () => {
     if (!id) return;
@@ -251,6 +256,19 @@ export function ContentDetailPage() {
               <ActivityTimeline logs={logs} profileMap={profileMap} />
             </CardContent>
           </Card>
+          {versions.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="text-sm font-medium">Version history</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {versions.slice(0, 10).map((version) => (
+                  <div key={version.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-xs">
+                    <span className="font-medium">Version {version.version_number}</span>
+                    <span className="text-muted-foreground">{fromNow(version.created_at)}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>

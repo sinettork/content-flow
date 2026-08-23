@@ -24,6 +24,7 @@ const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then(
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const NotificationsPage = lazy(() => import("@/features/notifications/NotificationsPage").then((m) => ({ default: m.NotificationsPage })));
 const AssetsPage = lazy(() => import("@/features/assets/AssetsPage").then((m) => ({ default: m.AssetsPage })));
+const OperationsPage = lazy(() => import("@/features/operations/OperationsPage").then((m) => ({ default: m.OperationsPage })));
 
 function PageLoader() {
   return <AppLoader label="Loading" delay={900} />;
@@ -54,6 +55,7 @@ export function AppRouter() {
             <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="campaigns/:id" element={<CampaignDetailPage />} />
             <Route path="assets" element={<AssetsPage />} />
+            <Route path="operations" element={<OperationsPage />} />
             <Route path="team" element={<TeamPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />

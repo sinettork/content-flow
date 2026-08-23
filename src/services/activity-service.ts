@@ -1,8 +1,15 @@
+import { isSupabaseBackend } from "@/lib/backend";
 import { findBy, genId, getAll, insert, removeWhere } from "@/lib/mock/db";
+import { deleteWhere, insertOne, selectMany } from "@/lib/supabase/repository";
 import type { ActivityLog, Json } from "@/types";
 
 export const activityService = {
   async listForItem(contentItemId: string, limit = 50): Promise<ActivityLog[]> {
+    if (isSupabaseBackend) {
+      return selectMany<ActivityLog>("activity_logs", (q) =>
+        q.eq("content_item_id", contentItemId).order("created_at", { ascending: false }).limit(limit)
+      );
+    }
     return (findBy("activity_logs", (a) => a.content_item_id === contentItemId) as ActivityLog[])
       .slice()
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
@@ -10,6 +17,9 @@ export const activityService = {
   },
 
   async recent(limit = 20): Promise<ActivityLog[]> {
+    if (isSupabaseBackend) {
+      return selectMany<ActivityLog>("activity_logs", (q) => q.order("created_at", { ascending: false }).limit(limit));
+    }
     return (getAll("activity_logs") as ActivityLog[])
       .slice()
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
@@ -17,6 +27,7 @@ export const activityService = {
   },
 
   async removeForItem(contentItemId: string): Promise<number> {
+    if (isSupabaseBackend) return deleteWhere("activity_logs", "content_item_id", contentItemId);
     return removeWhere("activity_logs", (activity) => activity.content_item_id === contentItemId);
   },
 
@@ -29,6 +40,14 @@ export const activityService = {
     new_value?: Json | null;
     metadata?: Json | null;
   }): Promise<ActivityLog> {
+    if (isSupabaseBackend) {
+      return insertOne<ActivityLog>("activity_logs", {
+        ...input,
+        old_value: input.old_value ?? null,
+        new_value: input.new_value ?? null,
+        metadata: input.metadata ?? null,
+      });
+    }
     const row: ActivityLog = {
       id: genId("al"),
       created_at: new Date().toISOString(),

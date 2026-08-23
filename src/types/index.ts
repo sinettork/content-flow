@@ -164,3 +164,28 @@ export interface ApprovalRequest {
   created_at: string;
   decided_at: string | null;
 }
+
+export interface ContentVersion {
+  id: string;
+  workspace_id: string;
+  content_item_id: string;
+  version_number: number;
+  snapshot: Json;
+  created_by: string;
+  created_at: string;
+}
+
+export interface PublishingJob {
+  id: string;
+  workspace_id: string;
+  content_platform_id: string;
+  status: "queued" | "processing" | "succeeded" | "failed" | "cancelled";
+  attempts: number;
+  run_at: string;
+  locked_at: string | null;
+  completed_at: string | null;
+  last_error: string | null;
+  provider_response: Json | null;
+  created_at: string;
+  updated_at: string;
+}

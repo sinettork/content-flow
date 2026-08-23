@@ -96,7 +96,7 @@ export function ContentFormPage() {
         }
       }
     })();
-  }, [id]);
+  }, [id, profile?.workspace_id, reset]);
 
   const onSubmit = async (values: FormValues) => {
     const workspace_id = profile?.workspace_id ?? "";

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { MockSession } from "@/lib/mock/auth";
+import type { AppSession } from "@/lib/auth-service";
 import type { Profile } from "@/types";
 
 export interface AuthUser {
@@ -9,11 +9,11 @@ export interface AuthUser {
 }
 
 interface AuthState {
-  session: MockSession | null;
+  session: AppSession | null;
   user: AuthUser | null;
   profile: Profile | null;
   loading: boolean;
-  setSession: (session: MockSession | null) => void;
+  setSession: (session: AppSession | null) => void;
   setProfile: (profile: Profile | null) => void;
   setLoading: (loading: boolean) => void;
   reset: () => void;

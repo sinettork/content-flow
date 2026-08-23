@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -14,15 +14,15 @@ export function NotificationsPage() {
   const userId = useAuthStore((s) => s.user?.id);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!userId) return;
     const list = await notificationService.listForUser(userId);
     setNotifications(list);
-  };
+  }, [userId]);
 
   useEffect(() => {
     load();
-  }, [userId]);
+  }, [load]);
 
   const handleMarkAllRead = async () => {
     if (!userId) return;

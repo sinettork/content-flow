@@ -27,7 +27,7 @@ import { formatDate } from "@/lib/dates";
 import { campaignService, contentService } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
-import type { Campaign, ContentItem } from "@/types";
+import type { Campaign } from "@/types";
 
 interface FormState {
   name: string;

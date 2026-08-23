@@ -4,44 +4,53 @@ import {
   getProfileForUser,
   getSession,
   onAuthChange,
-  signIn as mockSignIn,
-  signOut as mockSignOut,
-  sendResetEmail as mockSendReset,
-} from "@/lib/mock/auth";
+  signIn as appSignIn,
+  signOut as appSignOut,
+  sendResetEmail as appSendReset,
+} from "@/lib/auth-service";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function useAuthInit() {
   const { setSession, setProfile, setLoading } = useAuthStore();
 
   useEffect(() => {
-    const apply = (userId: string | null) => {
-      setProfile(userId ? getProfileForUser(userId) : null);
+    let active = true;
+    const apply = async (userId: string | null) => {
+      const nextProfile = userId ? await getProfileForUser(userId) : null;
+      if (active) setProfile(nextProfile);
     };
 
-    const initial = getSession();
-    setSession(initial);
-    apply(initial?.userId ?? null);
-    setLoading(false);
+    void (async () => {
+      try {
+        const initial = await getSession();
+        if (!active) return;
+        setSession(initial);
+        await apply(initial?.userId ?? null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
 
     const unsub = onAuthChange((session) => {
       setSession(session);
-      apply(session?.userId ?? null);
+      return apply(session?.userId ?? null);
     });
 
     return () => {
+      active = false;
       unsub();
     };
   }, [setSession, setProfile, setLoading]);
 }
 
 export async function signIn(email: string, password: string) {
-  return mockSignIn(email, password);
+  return appSignIn(email, password);
 }
 
 export async function signOut() {
-  return mockSignOut();
+  return appSignOut();
 }
 
 export async function sendResetEmail(email: string) {
-  return mockSendReset(email);
+  return appSendReset(email);
 }

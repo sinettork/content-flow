@@ -9,7 +9,7 @@ import { ContentStatusBadge } from "@/components/content/ContentStatusBadge";
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { reportService, platformService } from "@/services";

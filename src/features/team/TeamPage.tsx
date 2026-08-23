@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { isSupabaseBackend } from "@/lib/backend";
 import { ROLES, type Role } from "@/lib/constants";
 import { fromNow } from "@/lib/dates";
-import { profileService } from "@/services";
+import { invitationService, profileService } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
 import type { Profile } from "@/types";
@@ -30,13 +33,16 @@ export function TeamPage() {
   const currentRole = useAuthStore((s) => s.profile?.role);
 
   const [members, setMembers] = useState<Profile[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<Role>("viewer");
+  const [inviting, setInviting] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const list = await profileService.listForWorkspace(workspaceId);
     setMembers(list);
-  };
+  }, [workspaceId]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const handleRoleChange = async (profileId: string, role: Role) => {
     try {
@@ -55,12 +61,37 @@ export function TeamPage() {
   const canManage = currentRole === "admin" || currentRole === "manager";
   const allowedRoles = currentRole === "admin" ? ROLES : ROLES.filter((role) => role === "editor" || role === "viewer");
 
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    try {
+      await invitationService.invite(inviteEmail, inviteRole);
+      setInviteEmail("");
+      toast("Invitation sent", { variant: "success" });
+      await load();
+    } catch (error) {
+      toast("Could not send invitation", { description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setInviting(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
         title="Team"
         description={`${members.length} member${members.length !== 1 ? "s" : ""}`}
       />
+
+      {isSupabaseBackend && canManage && (
+        <Card className="mb-6 flex flex-wrap items-center gap-3 p-4">
+          <Input type="email" value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} placeholder="teammate@example.com" className="min-w-60 flex-1" />
+          <Select value={inviteRole} onChange={(event) => setInviteRole(event.target.value as Role)} className="w-32">
+            {allowedRoles.map((role) => <option key={role} value={role}>{role}</option>)}
+          </Select>
+          <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>{inviting ? "Sending…" : "Invite member"}</Button>
+        </Card>
+      )}
 
       {members.length === 0 ? (
         <EmptyState title="No team members" description="Invite people to your workspace." />

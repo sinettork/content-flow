@@ -18,7 +18,7 @@ import {
   TriangleAlert,
   Workflow,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -31,10 +31,13 @@ import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { isSupabaseBackend } from "@/lib/backend";
 import { CONTENT_TYPES, MASTER_STATUSES, PLATFORMS, PRIORITIES } from "@/lib/constants";
 import { resetDatabase } from "@/lib/mock/db";
 import { cn } from "@/lib/utils";
+import { settingsService } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
+import { toast } from "@/stores/toast-store";
 
 const CHECKLIST_ITEMS = [
   "Creative matches campaign objective",
@@ -59,6 +62,7 @@ const AUTOMATION_RULES = [
 
 export function SettingsPage() {
   const profile = useAuthStore((s) => s.profile);
+  const workspaceId = profile?.workspace_id ?? "";
   const [workspaceName, setWorkspaceName] = useState("ContentFlow Demo");
   const [timezone, setTimezone] = useState("Asia/Phnom_Penh");
   const [defaultContentType, setDefaultContentType] = useState<(typeof CONTENT_TYPES)[number]>("image");
@@ -74,10 +78,47 @@ export function SettingsPage() {
   });
   const [rules, setRules] = useState(AUTOMATION_RULES);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    if (!workspaceId) return;
+    settingsService.get(workspaceId).then((settings) => {
+      setWorkspaceName(settings.workspace_name);
+      setTimezone(settings.timezone);
+      setDefaultContentType(settings.default_content_type);
+      setDefaultPriority(settings.default_priority);
+      setApprovalRequired(settings.approval_required);
+      setAutoChecklist(settings.checklist_required);
+      setBrandNotes(settings.brand_notes);
+      setNotifications(settings.notification_preferences);
+      if (settings.automation_rules.length) setRules(settings.automation_rules);
+    }).catch((error: Error) => toast("Could not load settings", { description: error.message, variant: "destructive" }));
+  }, [workspaceId]);
+
+  const handleSave = async () => {
+    if (!workspaceId) return;
+    setSaving(true);
+    try {
+      await settingsService.save({
+        workspace_id: workspaceId,
+        workspace_name: workspaceName,
+        timezone,
+        default_content_type: defaultContentType,
+        default_priority: defaultPriority,
+        approval_required: approvalRequired,
+        checklist_required: autoChecklist,
+        brand_notes: brandNotes,
+        notification_preferences: notifications,
+        automation_rules: rules,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      toast("Workspace settings saved", { variant: "success" });
+    } catch (error) {
+      toast("Could not save settings", { description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -91,8 +132,8 @@ export function SettingsPage() {
         title="Settings"
         description="Set up workspace behavior, publishing rules, notifications, and defaults for your content team."
         actions={
-          <Button onClick={handleSave}>
-            <Save className="mr-1 h-4 w-4" /> {saved ? "Saved!" : "Save setup"}
+          <Button onClick={handleSave} disabled={saving || profile?.role !== "admin"}>
+            <Save className="mr-1 h-4 w-4" /> {saving ? "Saving…" : saved ? "Saved!" : "Save setup"}
           </Button>
         }
       />
@@ -316,7 +357,7 @@ export function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          {!isSupabaseBackend && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5 text-muted-foreground" />
@@ -358,12 +399,12 @@ export function SettingsPage() {
                 />
               </div>
             </CardContent>
-          </Card>
+          </Card>}
         </div>
       </div>
 
       <div className={cn("mt-4 text-sm text-muted-foreground", saved && "text-emerald-600")}>
-        {saved ? "Settings saved for this session." : "Some setup controls are local UI preferences until a real backend settings table is connected."}
+        {saved ? "Settings saved." : profile?.role === "admin" ? "Settings persist for this workspace." : "Only workspace admins can change these settings."}
       </div>
     </>
   );

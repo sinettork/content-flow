@@ -1,6 +1,8 @@
+import { isSupabaseBackend } from "@/lib/backend";
 import type { MasterStatus, Platform } from "@/lib/constants";
 import { MASTER_STATUSES, PLATFORMS } from "@/lib/constants";
 import { getAll } from "@/lib/mock/db";
+import { selectMany } from "@/lib/supabase/repository";
 import type { ContentItem, ContentPlatform } from "@/types";
 
 export interface DashboardMetrics {
@@ -33,8 +35,12 @@ function endOfMonth(d = new Date()): Date {
 
 export const reportService = {
   async dashboard(): Promise<DashboardMetrics> {
-    const items = getAll("content_items") as ContentItem[];
-    const platforms = getAll("content_platforms") as ContentPlatform[];
+    const [items, platforms] = isSupabaseBackend
+      ? await Promise.all([
+          selectMany<ContentItem>("content_items"),
+          selectMany<ContentPlatform>("content_platforms"),
+        ])
+      : [getAll("content_items") as ContentItem[], getAll("content_platforms") as ContentPlatform[]];
     const now = new Date();
     const weekFrom = startOfWeek(now).toISOString();
     const weekTo = endOfWeek(now).toISOString();
@@ -71,12 +77,22 @@ export const reportService = {
   },
 
   async scheduled(): Promise<ContentItem[]> {
+    if (isSupabaseBackend) {
+      return selectMany<ContentItem>("content_items", (q) =>
+        q.not("scheduled_at", "is", null).order("scheduled_at")
+      );
+    }
     return (getAll("content_items") as ContentItem[])
       .filter((i) => i.scheduled_at)
       .sort((a, b) => (a.scheduled_at ?? "").localeCompare(b.scheduled_at ?? ""));
   },
 
   async posted(): Promise<ContentItem[]> {
+    if (isSupabaseBackend) {
+      return selectMany<ContentItem>("content_items", (q) =>
+        q.eq("master_status", "posted").order("posted_at", { ascending: false })
+      );
+    }
     return (getAll("content_items") as ContentItem[])
       .filter((i) => i.master_status === "posted")
       .sort((a, b) => (b.posted_at ?? "").localeCompare(a.posted_at ?? ""));
@@ -84,6 +100,11 @@ export const reportService = {
 
   async overdue(): Promise<ContentItem[]> {
     const nowIso = new Date().toISOString();
+    if (isSupabaseBackend) {
+      return selectMany<ContentItem>("content_items", (q) =>
+        q.lt("due_at", nowIso).not("master_status", "in", '("posted","archived")').order("due_at")
+      );
+    }
     return (getAll("content_items") as ContentItem[])
       .filter((i) => i.due_at && i.due_at < nowIso && i.master_status !== "posted" && i.master_status !== "archived")
       .sort((a, b) => (a.due_at ?? "").localeCompare(b.due_at ?? ""));

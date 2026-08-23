@@ -64,7 +64,7 @@ export function SearchCommand({ open, onClose }: SearchCommandProps) {
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [open, results, selected]);
+  }, [navigate, onClose, open, results, selected]);
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>

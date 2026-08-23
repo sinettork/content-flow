@@ -17,6 +17,7 @@ import {
   Monitor,
   Menu,
   ChevronsLeft,
+  ListChecks,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
@@ -51,6 +52,7 @@ const NAV = [
   { to: "/app/calendar", label: "Calendar", icon: Calendar },
   { to: "/app/campaigns", label: "Campaigns", icon: Megaphone },
   { to: "/app/assets", label: "Assets", icon: FolderOpen },
+  { to: "/app/operations", label: "Operations", icon: ListChecks },
   { to: "/app/team", label: "Team", icon: Users },
   { to: "/app/reports", label: "Reports", icon: BarChart3 },
 ];
@@ -63,7 +65,7 @@ export function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, user } = useAuthStore();
-  const { sidebarCollapsed, toggleSidebar, setSidebarCollapsed } = useUiStore();
+  const { sidebarCollapsed, toggleSidebar } = useUiStore();
   const { theme, setTheme } = useThemeStore();
 
   const [mobileOpen, setMobileOpen] = useState(false);

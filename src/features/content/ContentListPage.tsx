@@ -1,5 +1,5 @@
 import { CalendarClock, Filter, Layers, Megaphone, Plus, Search, SlidersHorizontal, UserRound, X } from "lucide-react";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { CampaignBadge } from "@/components/campaigns/CampaignBadge";
@@ -15,6 +15,7 @@ import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePermission } from "@/hooks/usePermission";
+import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { MASTER_STATUSES, PLATFORMS , STATUS_ACCENTS } from "@/lib/constants";
 import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -36,7 +37,7 @@ export function ContentListPage() {
 
   const debouncedSearch = useDebounce(contentFilters.search, 250);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [list, camps, profs] = await Promise.all([
       contentService.list({ ...contentFilters, search: debouncedSearch }),
       campaignService.list(),
@@ -46,11 +47,12 @@ export function ContentListPage() {
     setCampaigns(camps);
     setProfiles(profs);
     setPlatformMap(await platformService.listForItems(list.map((item) => item.id)));
-  };
+  }, [contentFilters, debouncedSearch, workspaceId]);
 
   useEffect(() => {
     load();
-  }, [debouncedSearch, contentFilters.status, contentFilters.campaign_id, contentFilters.assigned_to, contentFilters.platform]);
+  }, [load]);
+  useWorkspaceRealtime(workspaceId ?? "", load);
 
   const campMap = Object.fromEntries(campaigns.map((c) => [c.id, c]));
   const profMap = Object.fromEntries(profiles.map((p) => [p.id, p]));
