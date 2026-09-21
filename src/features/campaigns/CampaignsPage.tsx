@@ -6,6 +6,7 @@ import { CampaignColorDot } from "@/components/campaigns/CampaignColorDot";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
+import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -121,6 +122,7 @@ export function CampaignsPage() {
 
   return (
     <>
+      <ContentWorkspaceNav />
       <PageHeader
         title="Campaigns"
         description={`${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""}`}
