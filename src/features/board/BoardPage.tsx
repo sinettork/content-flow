@@ -202,7 +202,7 @@ export function BoardPage() {
       <ContentWorkspaceNav />
       <PageHeader
         title="Board"
-        description="A monday-style workflow board for moving content through production."
+        description="Workflow board for moving content through production."
         actions={
           <Button onClick={() => navigate("/app/content/new")}>
             <Plus className="h-4 w-4" />
