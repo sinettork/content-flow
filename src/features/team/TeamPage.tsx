@@ -99,7 +99,7 @@ export function TeamPage() {
         <EmptyState title="No team members" description="Invite people to your workspace." />
       ) : (
         <Card>
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
@@ -147,7 +147,7 @@ export function TeamPage() {
                   );
                 })}
             </TableBody>
-          </Table>
+          </Table></div>
         </Card>
       )}
     </>
