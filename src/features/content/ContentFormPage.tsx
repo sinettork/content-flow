@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, ArrowLeft, Briefcase, CalendarClock, CheckCircle2, ClipboardList, Copy, FileText, Flag, Save, Tag, UserRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, Briefcase, CalendarClock, CheckCircle2, ClipboardList, Copy, FileText, Flag, Save, Tag, Upload, UserRound } from "lucide-react";
 import { type ChangeEvent, useEffect, useState } from "react";
 import { type Path, useForm } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
@@ -16,7 +16,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { usePermission, useRole } from "@/hooks/usePermission";
 import { CONTENT_TYPES, MASTER_STATUSES, PLATFORMS, PRIORITIES, type Platform } from "@/lib/constants";
-import { contentService, campaignService, profileService, activityService, platformService, getContentReadiness } from "@/services";
+import { assetService, contentService, campaignService, profileService, activityService, platformService, getContentReadiness } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
 import type { Campaign, ContentItem, ContentPlatform, Profile } from "@/types";
@@ -50,6 +50,7 @@ export function ContentFormPage() {
   const [platforms, setPlatforms] = useState<ContentPlatform[]>([]);
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);
   const [platformDrafts, setPlatformDrafts] = useState<Record<string, { caption: string; hashtags: string }>>({});
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const {
     register,
@@ -201,6 +202,28 @@ export function ContentFormPage() {
       }));
       await Promise.all(platforms.filter((p) => !selectedPlatforms.includes(p.platform_name)).map((p) => platformService.remove(p.id)));
 
+      if (pendingFiles.length > 0) {
+        try {
+          await Promise.all(
+            pendingFiles.map((file) =>
+              assetService.upload(file, {
+                workspace_id,
+                content_item_id: contentId,
+                uploaded_by: user!.id,
+              })
+            )
+          );
+        } catch (error) {
+          toast(
+            error instanceof Error
+              ? `Content saved, but some files could not be uploaded: ${error.message}`
+              : "Content saved, but some files could not be uploaded.",
+            { variant: "destructive" }
+          );
+        }
+      }
+
+      setPendingFiles([]);
       toast(isEdit ? "Content updated" : "Content created", { variant: "success" });
       navigate(`/app/content/${contentId}`);
     } catch (error) {
@@ -245,6 +268,61 @@ export function ContentFormPage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Creative files */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                Creative files
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <button
+                type="button"
+                className="flex w-full flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center transition-colors hover:border-primary/40 hover:bg-muted/20"
+                onClick={() => document.getElementById("content-files")?.click()}
+              >
+                <Upload className="mb-2 h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Add designs, videos or source files</span>
+                <span className="mt-1 text-xs text-muted-foreground">Files will be attached to this content after you save.</span>
+              </button>
+              <input
+                id="content-files"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  if (event.target.files) {
+                    setPendingFiles((current) => [...current, ...Array.from(event.target.files)]);
+                    event.target.value = "";
+                  }
+                }}
+              />
+              {pendingFiles.length > 0 ? (
+                <div className="space-y-1.5">
+                  {pendingFiles.map((file, index) => (
+                    <div key={`${file.name}-${index}`} className="flex items-center justify-between rounded-md border px-3 py-2 text-xs">
+                      <span className="truncate font-medium">{file.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2 h-7 shrink-0"
+                        onClick={() => setPendingFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Existing revisions can be added or removed from the Content page after saving.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Basic info */}
           <Card>
             <CardHeader>
