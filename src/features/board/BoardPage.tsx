@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { BoardCard } from "@/components/board/BoardCard";
 import { BoardColumn } from "@/components/board/BoardColumn";
 import { PageHeader } from "@/components/common/PageHeader";
+import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -198,6 +199,7 @@ export function BoardPage() {
 
   return (
     <>
+      <ContentWorkspaceNav />
       <PageHeader
         title="Board"
         description="A monday-style workflow board for moving content through production."
