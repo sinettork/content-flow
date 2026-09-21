@@ -41,9 +41,9 @@ export function CommentsSection({ contentItemId, workspaceId }: CommentsSectionP
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold">Comments</h3>
+      <h3 className="text-sm font-semibold">Updates</h3>
       <CommentList comments={comments} profileMap={profileMap} />
-      {user && <CommentComposer onSubmit={handleAdd} />}
+      {user && <CommentComposer onSubmit={handleAdd} placeholder="Write an update…" />}
     </div>
   );
 }
