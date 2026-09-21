@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { PageHeader } from "@/components/common/PageHeader";
+import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { ContentStatusBadge } from "@/components/content/ContentStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +69,7 @@ export function MyWorkPage() {
 
   return (
     <>
+      <ContentWorkspaceNav />
       <PageHeader title="My Work" description="A focused queue of content assigned to you, starting with what needs attention today." />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {section("Overdue", groups.overdue, <Clock3 className="h-4 w-4 text-destructive" />)}
