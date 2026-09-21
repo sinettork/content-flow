@@ -150,7 +150,7 @@ export function AutomationPage() {
     }
   };
 
-  const enabledCount = rules.filter((rule) => rule.enabled).length;
+  const connectFacebook = async () => {\n    setConnectingFacebook(true);\n    try {\n      await automationService.connectFacebook();\n    } catch (error) {\n      setConnectingFacebook(false);\n      toast("Could not connect Meta", {\n        description: error instanceof Error ? error.message : "Unknown error",\n        variant: "destructive",\n      });\n    }\n  };\n\n  const enabledCount = rules.filter((rule) => rule.enabled).length;
   const successfulRuns = runs.filter((run) => run.status === "succeeded").length;
   const failedRuns = runs.filter((run) => run.status === "failed").length;
 
@@ -233,13 +233,13 @@ export function AutomationPage() {
           <CardContent className="space-y-2">
             <Button className="mb-2 w-full justify-start" variant="outline" onClick={() => void connectFacebook()} disabled={connectingFacebook}>
               <Facebook className="mr-2 h-4 w-4" />
-              {connectingFacebook ? "Connecting…" : "Connect Facebook Page"}
+              {connectingFacebook ? "Connecting…" : "Connect Meta (Facebook + Instagram)"}
             </Button>
             {connections.length === 0 ? (
               <div className="rounded-md border border-dashed p-5 text-center">
                 <Settings2 className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
                 <p className="text-sm font-medium">No channels connected</p>
-                <p className="mt-1 text-xs text-muted-foreground">OAuth connections will be added in the next integration phase.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Connect Meta to add Facebook Pages and linked Instagram professional accounts. TikTok, YouTube, and Telegram connectors are next.</p>
               </div>
             ) : connections.map((connection) => {
               const Icon = providerIcons[connection.provider];
