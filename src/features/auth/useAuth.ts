@@ -7,7 +7,7 @@ import {
   signIn as appSignIn,
   signOut as appSignOut,
   sendResetEmail as appSendReset,
-  updatePassword as appUpdatePassword,
+  updatePassword as appUpdatePassword,\n  signUp as appSignUp,
 } from "@/lib/auth-service";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -51,7 +51,7 @@ export function useAuthInit() {
   }, [setSession, setProfile, setLoading]);
 }
 
-export async function signIn(email: string, password: string) {
+export async function signUp(email: string, password: string, fullName: string) {\n  return appSignUp(email, password, fullName);\n}\n\nexport async function signIn(email: string, password: string) {
   return appSignIn(email, password);
 }
 
