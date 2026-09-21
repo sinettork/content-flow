@@ -73,7 +73,10 @@ export function SignInPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="password">Password</Label>
-                <Link to="/auth/forgot-password" className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -93,7 +96,10 @@ export function SignInPage() {
             </div>
 
             {error && (
-              <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
                 {error}
               </p>
             )}
@@ -106,7 +112,18 @@ export function SignInPage() {
         </CardContent>
       </Card>
 
-      <div className="space-y-2 text-center">\n        <p className="text-sm text-muted-foreground">\n          Don’t have an account?{" "}\n          <Link to="/auth/register" className="font-medium text-foreground transition-colors hover:underline">Create account</Link>\n        </p>\n        <p className="text-xs text-muted-foreground">Secure access powered by Supabase Auth</p>\n      </div>
+      <div className="space-y-2 text-center">
+        <p className="text-sm text-muted-foreground">
+          Don’t have an account?{" "}
+          <Link
+            to="/auth/register"
+            className="font-medium text-foreground transition-colors hover:underline"
+          >
+            Create account
+          </Link>
+        </p>
+        <p className="text-xs text-muted-foreground">Secure access powered by Supabase Auth</p>
+      </div>
     </div>
   );
 }
