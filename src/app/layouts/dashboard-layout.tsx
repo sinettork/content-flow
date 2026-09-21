@@ -48,17 +48,17 @@ import { useThemeStore } from "@/stores/theme-store";
 import { useUiStore } from "@/stores/ui-store";
 
 const NAV = [
-  { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/app/my-work", label: "My Work", icon: UserCheck },
-  { to: "/app/content", label: "Content", icon: FileText },
-  { to: "/app/board", label: "Board", icon: Kanban },
-  { to: "/app/calendar", label: "Calendar", icon: Calendar },
-  { to: "/app/campaigns", label: "Campaigns", icon: Megaphone },
-  { to: "/app/assets", label: "Assets", icon: FolderOpen },
-  { to: "/app/operations", label: "Operations", icon: ListChecks },
-  { to: "/app/automation", label: "Automation", icon: Bot },
-  { to: "/app/team", label: "Team", icon: Users },
-  { to: "/app/reports", label: "Reports", icon: BarChart3 },
+  { section: "Workspace", to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { section: "Workspace", to: "/app/my-work", label: "My Work", icon: UserCheck },
+  { section: "Workspace", to: "/app/content", label: "Content", icon: FileText },
+  { section: "Workspace", to: "/app/board", label: "Board", icon: Kanban },
+  { section: "Workspace", to: "/app/calendar", label: "Calendar", icon: Calendar },
+  { section: "Workspace", to: "/app/campaigns", label: "Campaigns", icon: Megaphone },
+  { section: "Library", to: "/app/assets", label: "Assets", icon: FolderOpen },
+  { section: "Operations", to: "/app/operations", label: "Approvals & Publishing", icon: ListChecks },
+  { section: "Operations", to: "/app/automation", label: "Automation", icon: Bot },
+  { section: "Operations", to: "/app/reports", label: "Reports", icon: BarChart3 },
+  { section: "Team", to: "/app/team", label: "Team", icon: Users },
 ];
 
 const NAV_BOTTOM = [
@@ -113,10 +113,23 @@ export function DashboardLayout() {
   const ThemeIcon = themeIcons[theme];
 
   function NavItems({ collapsed }: { collapsed: boolean }) {
+    let lastSection = "";
     return (
       <>
-        {NAV.map(({ to, label, icon: Icon }) => (
-          <NavLink
+        {NAV.map(({ section, to, label, icon: Icon }) => (
+          <div key={to}>
+            {section !== lastSection && (
+              <div
+                className={cn(
+                  "px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60",
+                  lastSection && "border-t border-sidebar-border/60 mt-2",
+                  collapsed && "sr-only"
+                )}
+              >
+                {section}
+              </div>
+            )}
+            <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
@@ -139,6 +152,8 @@ export function DashboardLayout() {
               </>
             )}
           </NavLink>
+            {void (lastSection = section)}
+          </div>
         ))}
       </>
     );
