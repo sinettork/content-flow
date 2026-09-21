@@ -11,7 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Bot, Eye, Filter, Plus, Search, Sparkles, X } from "lucide-react";
+import { Filter, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -19,7 +19,6 @@ import { BoardCard } from "@/components/board/BoardCard";
 import { BoardColumn } from "@/components/board/BoardColumn";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -206,20 +205,15 @@ export function BoardPage() {
         actions={
           <Button onClick={() => navigate("/app/content/new")}>
             <Plus className="h-4 w-4" />
-            New item
+            New content
           </Button>
         }
       />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="gap-1.5 rounded-md px-2.5 py-1">
-            <Sparkles className="h-3.5 w-3.5" />
-            Main board
-          </Badge>
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => setFilterOpen((open) => !open)}>
-            <Eye className="h-3.5 w-3.5" />
-            Kanban
-          </Button>
+          <div className="text-xs text-muted-foreground">
+            Drag content between stages to update its status.
+          </div>
           <Button variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => setFilterOpen((open) => !open)}>
             <Filter className="h-3.5 w-3.5" />
             {filterOpen ? "Hide filters" : "Filter"}
@@ -229,7 +223,7 @@ export function BoardPage() {
           <div className="mb-4 grid gap-2 rounded-xl border bg-card p-3 md:grid-cols-[minmax(180px,1fr)_180px_180px_auto]">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search cards…" className="pl-8" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search content…" className="pl-8" />
             </div>
             <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as MasterStatus | "all")}>
               <option value="all">All statuses</option>
@@ -244,10 +238,7 @@ export function BoardPage() {
             </Button>
           </div>
         )}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Bot className="h-3.5 w-3.5" />
-          Drag a card to update its status
-        </div>
+
       </div>
       <DndContext
         sensors={sensors}
