@@ -129,6 +129,45 @@ export function ContentDetailPage() {
         }
       />
 
+      {allowedTransitions.length > 0 && (
+        <Card className="mb-6 border-primary/20 bg-primary/[0.03]">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-semibold">Next step</p>
+              <p className="text-sm text-muted-foreground">
+                {item.master_status === "draft"
+                  ? "Send this draft for review when the brief and platforms are ready."
+                  : item.master_status === "in_review"
+                    ? "Review the feedback and move the content to the next approval state."
+                    : item.master_status === "changes_requested"
+                      ? "Apply the requested changes, then resubmit for review."
+                      : item.master_status === "approved"
+                        ? "Choose a publish time and schedule the approved content."
+                        : item.master_status === "scheduled"
+                          ? "Confirm the publishing result when this content goes live."
+                          : "Choose the next available workflow action."}
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={async () => {
+                const nextStatus = allowedTransitions[0];
+                try {
+                  await contentService.setStatus(item.id, nextStatus, { role, userId });
+                  toast(`Moved to ${STATUS_LABELS[nextStatus]}`, { variant: "success" });
+                  await load();
+                } catch (error) {
+                  toast(error instanceof Error ? error.message : "Unable to update this content.", { variant: "destructive" });
+                }
+              }}
+            >
+              <ChevronRight className="mr-1 h-4 w-4" />
+              {STATUS_LABELS[allowedTransitions[0]]}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left column */}
         <div className="space-y-6 lg:col-span-2">
