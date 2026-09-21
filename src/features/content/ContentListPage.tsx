@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { CampaignBadge } from "@/components/campaigns/CampaignBadge";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
+import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { ContentStatusBadge } from "@/components/content/ContentStatusBadge";
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -88,6 +89,7 @@ export function ContentListPage() {
 
   return (
     <>
+      <ContentWorkspaceNav />
       <PageHeader
         title="Content"
         description={`${items.length} item${items.length !== 1 ? "s" : ""}`}
