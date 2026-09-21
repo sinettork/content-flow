@@ -106,7 +106,7 @@ export function SignInPage() {
         </CardContent>
       </Card>
 
-      <p className="text-center text-xs text-muted-foreground">Secure access powered by Supabase Auth</p>
+      <div className="space-y-2 text-center">\n        <p className="text-sm text-muted-foreground">\n          Don’t have an account?{" "}\n          <Link to="/auth/register" className="font-medium text-foreground transition-colors hover:underline">Create account</Link>\n        </p>\n        <p className="text-xs text-muted-foreground">Secure access powered by Supabase Auth</p>\n      </div>
     </div>
   );
 }
