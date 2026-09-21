@@ -48,13 +48,13 @@ import { useThemeStore } from "@/stores/theme-store";
 import { useUiStore } from "@/stores/ui-store";
 
 const NAV = [
-  { section: "Workspace", to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { section: "Workspace", to: "/app/my-work", label: "My Work", icon: UserCheck },
-  { section: "Workspace", to: "/app/content", label: "Content", icon: FileText },
-  { section: "Workspace", to: "/app/board", label: "Board", icon: Kanban },
-  { section: "Workspace", to: "/app/calendar", label: "Calendar", icon: Calendar },
-  { section: "Workspace", to: "/app/campaigns", label: "Campaigns", icon: Megaphone },
-  { section: "Library", to: "/app/assets", label: "Assets", icon: FolderOpen },
+  { section: "Overview", to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { section: "Content workspace", to: "/app/my-work", label: "My Work", icon: UserCheck },
+  { section: "Content workspace", to: "/app/content", label: "Content", icon: FileText },
+  { section: "Content workspace", to: "/app/board", label: "Board", icon: Kanban },
+  { section: "Content workspace", to: "/app/calendar", label: "Calendar", icon: Calendar },
+  { section: "Content workspace", to: "/app/campaigns", label: "Campaigns", icon: Megaphone },
+  { section: "Content workspace", to: "/app/assets", label: "Assets", icon: FolderOpen },
   { section: "Operations", to: "/app/operations", label: "Approvals & Publishing", icon: ListChecks },
   { section: "Operations", to: "/app/automation", label: "Automation", icon: Bot },
   { section: "Operations", to: "/app/reports", label: "Reports", icon: BarChart3 },
