@@ -11,3 +11,4 @@ export { settingsService } from "./settings-service";
 export type { WorkspaceSettings, AutomationRule } from "./settings-service";
 export { workflowService } from "./workflow-service";
 export { invitationService } from "./invitation-service";
+export { automationService } from "./automation-service";
