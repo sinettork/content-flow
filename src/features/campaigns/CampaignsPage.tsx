@@ -174,7 +174,7 @@ export function CampaignsPage() {
                     </Button>
                     <ConfirmDialog
                       trigger={
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive hover:text-destructive">
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive hover:text-destructive" onClick={(event) => event.stopPropagation()}>
                           <Trash2 className="mr-1 h-3 w-3" /> Delete
                         </Button>
                       }
