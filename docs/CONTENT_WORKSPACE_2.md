@@ -35,3 +35,16 @@ The sidebar reinforces this hierarchy, while each core view provides a consisten
 ## Next product direction
 
 The next architectural step can evolve the Content detail screen into the canonical work object page: content brief, platform variants, assets, comments, approval state, schedule, publishing result, and activity in one place.
+
+
+## Canonical content-item review flow
+
+1. Create content and optionally attach creative files from the New/Edit screen.
+2. Open the Content Item to see its creative files, platform copy, comments, versions, activity, and workflow.
+3. Add new creative files as revisions directly on the Content Item.
+4. Send the item for review. Reviewers can open the same item from Approvals & Publishing.
+5. Reviewers use comments plus Request changes / Approve.
+6. After changes are requested, the owner updates the same item and resubmits.
+7. Approved content moves into scheduling and publishing.
+
+The global Assets page remains a reusable library. It is not the primary review workspace.
