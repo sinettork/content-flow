@@ -403,15 +403,20 @@ begin
   if tg_op = 'UPDATE' and new.master_status is distinct from old.master_status then
     if public.current_role_name() not in ('admin','manager','editor') then raise exception 'Insufficient permission'; end if;
     if new.master_status = 'approved' and public.current_role_name() not in ('admin','manager') then raise exception 'Only managers can approve'; end if;
-    if not case old.master_status
-      when 'draft' then new.master_status in ('in_review','archived')
-      when 'in_review' then new.master_status in ('changes_requested','approved','draft')
-      when 'changes_requested' then new.master_status in ('in_review','draft','archived')
-      when 'approved' then new.master_status in ('scheduled','changes_requested','draft')
-      when 'scheduled' then new.master_status in ('posted','approved','draft')
-      when 'posted' then new.master_status = 'archived'
-      when 'archived' then new.master_status = 'draft'
-      else false end then raise exception 'Invalid workflow transition'; end if;
+    if not (
+      case old.master_status
+        when 'draft' then new.master_status in ('in_review','archived')
+        when 'in_review' then new.master_status in ('changes_requested','approved','draft')
+        when 'changes_requested' then new.master_status in ('in_review','draft','archived')
+        when 'approved' then new.master_status in ('scheduled','changes_requested','draft')
+        when 'scheduled' then new.master_status in ('posted','approved','draft')
+        when 'posted' then new.master_status = 'archived'
+        when 'archived' then new.master_status = 'draft'
+        else false
+      end
+    ) then
+      raise exception 'Invalid workflow transition';
+    end if;
   end if;
   return new;
 end $$;
