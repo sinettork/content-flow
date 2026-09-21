@@ -279,7 +279,7 @@ export function DashboardLayout() {
       >
         <span className="flex min-w-0 items-center gap-2.5">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="truncate">Search...</span>
+          <span className="truncate">Search content...</span>
         </span>
         <kbd className="ml-3 shrink-0 rounded border border-border/80 bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
           ⌘K
