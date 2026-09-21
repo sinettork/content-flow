@@ -22,6 +22,7 @@ import { PageSkeleton } from "@/components/common/PageSkeleton";
 import { ContentStatusBadge } from "@/components/content/ContentStatusBadge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fromNow, formatDate } from "@/lib/dates";
 import { reportService, activityService, profileService } from "@/services";
