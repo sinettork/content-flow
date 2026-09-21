@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowRight, LockKeyhole } from "lucide-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -23,38 +24,62 @@ export function UpdatePasswordPage() {
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+
     if (password.length < 8) return setError("Use at least 8 characters.");
     if (password !== confirmation) return setError("Passwords do not match.");
+
     setSaving(true);
     const { error: updateError } = await updatePassword(password);
     setSaving(false);
-    if (updateError) return setError(updateError.message);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
     navigate("/app/dashboard", { replace: true });
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Choose a new password</CardTitle>
-        <CardDescription>Use a strong password you do not use elsewhere.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="password">New password</Label>
-            <Input id="password" type="password" autoComplete="new-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmation">Confirm new password</Label>
-            <Input id="confirmation" type="password" autoComplete="new-password" required value={confirmation} onChange={(event) => setConfirmation(event.target.value)} />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={saving || loadingSession}>
-            {saving ? "Updating…" : "Update password"}
-          </Button>
-          <Link to="/auth/sign-in" className="block text-center text-sm text-primary hover:underline">Back to sign in</Link>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <div className="space-y-2 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-sm">CF</div>
+        <h1 className="text-2xl font-semibold tracking-tight">Create a new password</h1>
+        <p className="text-sm text-muted-foreground">Choose a strong password for your ContentFlow account.</p>
+      </div>
+
+      <Card className="border-border/70 shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">Update password</CardTitle>
+          <CardDescription>Your new password must contain at least 8 characters.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">New password</Label>
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="password" type="password" autoComplete="new-password" required placeholder="Enter new password" className="pl-9" value={password} onChange={(event) => setPassword(event.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmation">Confirm new password</Label>
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="confirmation" type="password" autoComplete="new-password" required placeholder="Confirm new password" className="pl-9" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} />
+              </div>
+            </div>
+
+            {error && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}
+
+            <Button type="submit" className="w-full" disabled={saving || loadingSession}>
+              {saving ? "Updating…" : "Update password"}
+              {!saving && <ArrowRight className="ml-2 h-4 w-4" />}
+            </Button>
+            <Link to="/auth/sign-in" className="block text-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Back to sign in</Link>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
