@@ -100,7 +100,7 @@ export function CampaignDetailPage() {
         />
       ) : (
         <Card>
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
@@ -133,7 +133,7 @@ export function CampaignDetailPage() {
                   );
                 })}
             </TableBody>
-          </Table>
+          </Table></div>
         </Card>
       )}
     </>
