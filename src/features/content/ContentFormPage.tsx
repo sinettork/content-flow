@@ -47,7 +47,9 @@ export function ContentFormPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [existing, setExisting] = useState<ContentItem | null>(null);
-  const [platforms, setPlatforms] = useState<ContentPlatform[]>([]);\n  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);\n  const [platformDrafts, setPlatformDrafts] = useState<Record<string, { caption: string; hashtags: string }>>({});
+  const [platforms, setPlatforms] = useState<ContentPlatform[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);
+  const [platformDrafts, setPlatformDrafts] = useState<Record<string, { caption: string; hashtags: string }>>({});
 
   const {
     register,
@@ -84,7 +86,10 @@ export function ContentFormPage() {
         const item = await contentService.get(id);
         if (item) {
           setExisting(item);
-          const itemPlatforms = await platformService.listForItem(item.id);\n          setPlatforms(itemPlatforms);\n          setSelectedPlatforms(itemPlatforms.map((p) => p.platform_name));\n          setPlatformDrafts(Object.fromEntries(itemPlatforms.map((p) => [p.platform_name, { caption: p.caption, hashtags: p.hashtags }])));
+          const itemPlatforms = await platformService.listForItem(item.id);
+          setPlatforms(itemPlatforms);
+          setSelectedPlatforms(itemPlatforms.map((p) => p.platform_name));
+          setPlatformDrafts(Object.fromEntries(itemPlatforms.map((p) => [p.platform_name, { caption: p.caption, hashtags: p.hashtags }])));
           reset({
             title: item.title,
             content_type: item.content_type,
