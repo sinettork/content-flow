@@ -77,7 +77,7 @@ export function OperationsPage() {
 
   return (
     <>
-      <PageHeader title="Operations" description="Approval queue and publishing job health." actions={<Button variant="outline" onClick={load}><RotateCcw className="mr-2 h-4 w-4" />Refresh</Button>} />
+      <PageHeader title="Approvals & Publishing" description="Review content and recover publishing jobs that need attention." actions={<Button variant="outline" onClick={load}><RotateCcw className="mr-2 h-4 w-4" />Refresh</Button>} />
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader className="space-y-3">
