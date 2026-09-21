@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { usePermission, useRole } from "@/hooks/usePermission";
-import { CONTENT_TYPES, MASTER_STATUSES, PRIORITIES } from "@/lib/constants";
+import { CONTENT_TYPES, MASTER_STATUSES, PLATFORMS, PRIORITIES, type Platform } from "@/lib/constants";
 import { contentService, campaignService, profileService, activityService, platformService, getContentReadiness } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
@@ -47,7 +47,7 @@ export function ContentFormPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [existing, setExisting] = useState<ContentItem | null>(null);
-  const [platforms, setPlatforms] = useState<ContentPlatform[]>([]);
+  const [platforms, setPlatforms] = useState<ContentPlatform[]>([]);\n  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);\n  const [platformDrafts, setPlatformDrafts] = useState<Record<string, { caption: string; hashtags: string }>>({});
 
   const {
     register,
@@ -84,7 +84,7 @@ export function ContentFormPage() {
         const item = await contentService.get(id);
         if (item) {
           setExisting(item);
-          setPlatforms(await platformService.listForItem(item.id));
+          const itemPlatforms = await platformService.listForItem(item.id);\n          setPlatforms(itemPlatforms);\n          setSelectedPlatforms(itemPlatforms.map((p) => p.platform_name));\n          setPlatformDrafts(Object.fromEntries(itemPlatforms.map((p) => [p.platform_name, { caption: p.caption, hashtags: p.hashtags }])));
           reset({
             title: item.title,
             content_type: item.content_type,
@@ -134,8 +134,10 @@ export function ContentFormPage() {
     };
 
     try {
+      let contentId: string;
       if (isEdit && existing) {
         await contentService.update(existing.id, payload, { role, userId: user!.id });
+        contentId = existing.id;
         await activityService.log({
           workspace_id,
           content_item_id: existing.id,
@@ -144,8 +146,6 @@ export function ContentFormPage() {
           old_value: { title: existing.title },
           new_value: { title: values.title },
         });
-        toast("Content updated", { variant: "success" });
-        navigate(`/app/content/${existing.id}`);
       } else {
         const created = await contentService.create({
           ...payload,
@@ -158,6 +158,7 @@ export function ContentFormPage() {
           posted_at: null,
           archived_at: null,
         });
+        contentId = created.id;
         await activityService.log({
           workspace_id,
           content_item_id: created.id,
@@ -165,9 +166,33 @@ export function ContentFormPage() {
           action_type: "content.created",
           new_value: { title: values.title },
         });
-        toast("Content created", { variant: "success" });
-        navigate(`/app/content/${created.id}`);
       }
+
+      const existingByPlatform = Object.fromEntries(platforms.map((p) => [p.platform_name, p]));
+      await Promise.all(selectedPlatforms.map(async (platform) => {
+        const draft = platformDrafts[platform] ?? { caption: "", hashtags: "" };
+        const current = existingByPlatform[platform];
+        const nextPlatform = {
+          workspace_id,
+          content_item_id: contentId,
+          platform_name: platform,
+          platform_status: current?.platform_status ?? "draft",
+          caption: draft.caption,
+          hashtags: draft.hashtags,
+          scheduled_at: current?.scheduled_at ?? null,
+          posted_at: current?.posted_at ?? null,
+          post_url: current?.post_url ?? null,
+          posted_by: current?.posted_by ?? null,
+          checklist_completed: current?.checklist_completed ?? false,
+          notes: current?.notes ?? null,
+        };
+        if (current) await platformService.update(current.id, nextPlatform);
+        else await platformService.create(nextPlatform);
+      }));
+      await Promise.all(platforms.filter((p) => !selectedPlatforms.includes(p.platform_name)).map((p) => platformService.remove(p.id)));
+
+      toast(isEdit ? "Content updated" : "Content created", { variant: "success" });
+      navigate(`/app/content/${contentId}`);
     } catch (error) {
       toast(error instanceof Error ? error.message : "Unable to save content.", { variant: "destructive" });
     }
@@ -310,6 +335,65 @@ export function ContentFormPage() {
           </Card>
 
           {/* Brief */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                Platforms & copy
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Choose where this content will be published. You can refine the copy for each platform.</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {PLATFORMS.map((platform) => {
+                  const selected = selectedPlatforms.includes(platform);
+                  return (
+                    <Button
+                      key={platform}
+                      type="button"
+                      variant={selected ? "default" : "outline"}
+                      size="sm"
+                      className="capitalize"
+                      onClick={() => {
+                        setSelectedPlatforms((current) => current.includes(platform) ? current.filter((item) => item !== platform) : [...current, platform]);
+                        setPlatformDrafts((current) => current[platform] ? current : { ...current, [platform]: { caption: "", hashtags: "" } });
+                      }}
+                    >
+                      {platform.replace(/_/g, " ")}
+                    </Button>
+                  );
+                })}
+              </div>
+              {selectedPlatforms.length === 0 && (
+                <div className="rounded-md border border-dashed bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
+                  No platforms selected yet. Add at least one platform before sending this content for review.
+                </div>
+              )}
+              <div className="grid gap-4 md:grid-cols-2">
+                {selectedPlatforms.map((platform) => {
+                  const draft = platformDrafts[platform] ?? { caption: "", hashtags: "" };
+                  return (
+                    <div key={platform} className="rounded-lg border p-3">
+                      <p className="mb-2 text-sm font-medium capitalize">{platform.replace(/_/g, " ")}</p>
+                      <Textarea
+                        rows={4}
+                        value={draft.caption}
+                        onChange={(e) => setPlatformDrafts((current) => ({ ...current, [platform]: { ...draft, caption: e.target.value } }))}
+                        placeholder="Platform caption…"
+                      />
+                      <Input
+                        className="mt-2"
+                        value={draft.hashtags}
+                        onChange={(e) => setPlatformDrafts((current) => ({ ...current, [platform]: { ...draft, hashtags: e.target.value } }))}
+                        placeholder="#hashtags"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm">
