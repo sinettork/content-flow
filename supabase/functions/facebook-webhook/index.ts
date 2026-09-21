@@ -19,6 +19,6 @@ Deno.serve(async req=>{
  const body=await req.text(),secret=Deno.env.get("META_APP_SECRET");if(!secret||!(await verify(body,req.headers.get("x-hub-signature-256"),secret)))return new Response("Invalid signature",{status:403});
  try{const json=JSON.parse(body);for(const entry of json.entry??[]){const pageId=String(entry.id);const {data:c}=await db.from("social_connections").select("id,workspace_id").eq("provider","facebook").eq("external_account_id",pageId).eq("status","active").maybeSingle();if(!c)continue;
    for(const change of entry.changes??[]){if(change.field!=="feed")continue;const v=change.value??{};const item=String(v.item??"");if(item==="comment"||v.comment_id){const id=String(v.comment_id??v.id??crypto.randomUUID());await ingest(c.workspace_id,c.id,pageId,"incoming_comment",`comment:${id}`,v);}}
-   for(const m of entry.messaging??[]){const mid=String(m.message?.mid??m.timestamp??crypto.randomUUID());await ingest(c.workspace_id,c.id,pageId,"incoming_message",`message:${mid}`,m);}
+   for(const m of entry.messaging??[]){if(m.message?.is_echo)continue;const mid=String(m.message?.mid??m.timestamp??crypto.randomUUID());await ingest(c.workspace_id,c.id,pageId,"incoming_message",`message:${mid}`,m);}
   }return Response.json({ok:true});}catch(e){console.error(e);return Response.json({ok:false,error:e instanceof Error?e.message:String(e)},{status:500});}
 });
