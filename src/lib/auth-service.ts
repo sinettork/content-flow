@@ -7,7 +7,6 @@ export interface AppSession {
   userId: string;
   email: string;
   createdAt: string;
-  accessToken?: string;
 }
 
 function toAppSession(session: { user: { id: string; email?: string; created_at: string }; access_token: string } | null): AppSession | null {
@@ -16,14 +15,21 @@ function toAppSession(session: { user: { id: string; email?: string; created_at:
     userId: session.user.id,
     email: session.user.email ?? "",
     createdAt: session.user.created_at,
-    accessToken: session.access_token,
   };
 }
 
 export async function getSession(): Promise<AppSession | null> {
   if (!isSupabaseBackend) return mock.getSession();
-  const { data, error } = await requireSupabase().auth.getSession();
+  const client = requireSupabase();
+  const { data, error } = await client.auth.getSession();
   if (error) throw error;
+  if (!data.session) return null;
+  const { data: verified, error: verificationError } = await client.auth.getUser();
+  if (verificationError) throw verificationError;
+  if (!verified.user || verified.user.id !== data.session.user.id) {
+    await client.auth.signOut();
+    return null;
+  }
   return toAppSession(data.session);
 }
 

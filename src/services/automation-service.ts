@@ -1,4 +1,5 @@
 import { isSupabaseBackend } from "@/lib/backend";
+import type { Platform } from "@/lib/constants";
 import { requireSupabase } from "@/lib/supabase/client";
 
 export type AutomationTrigger =
@@ -24,6 +25,41 @@ export interface SocialConnection {
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+export type ConnectionHealth = "healthy" | "stale" | "action_required";
+
+export interface PublishingReadiness {
+  platform: Platform;
+  connection: "connected" | "missing" | "unhealthy";
+  canPublish: false;
+  reason: string;
+  nextStep: string;
+}
+
+export function connectionHealth(connection: SocialConnection, now = Date.now()): ConnectionHealth {
+  if (connection.status === "error" || connection.status === "disconnected") return "action_required";
+  if (!connection.last_synced_at || now - Date.parse(connection.last_synced_at) > 24 * 60 * 60 * 1000) return "stale";
+  return "healthy";
+}
+
+/** Publishing adapters are intentionally explicit: OAuth alone must not imply publishing support. */
+export function publishingReadiness(platform: Platform, connections: SocialConnection[]): PublishingReadiness {
+  const provider = platform === "instagram" ? "instagram" : platform;
+  const connection = connections.find((item) => item.provider === provider);
+  if (!connection) {
+    return { platform, connection: "missing", canPublish: false, reason: `No ${platform} account is connected.`, nextStep: "Connect an account before publishing." };
+  }
+  if (connectionHealth(connection) === "action_required") {
+    return { platform, connection: "unhealthy", canPublish: false, reason: `${connection.name} needs attention.`, nextStep: "Reconnect the account and confirm its permissions." };
+  }
+  return {
+    platform,
+    connection: "connected",
+    canPublish: false,
+    reason: `${connection.name} is connected, but the ${platform} publishing worker is not configured.`,
+    nextStep: "Keep content scheduled and complete the provider publishing adapter before sending live posts.",
+  };
 }
 
 export interface AutomationRule {

@@ -13,7 +13,7 @@ import {
 import { useAuthStore } from "@/stores/auth-store";
 
 export function useAuthInit() {
-  const { setSession, setProfile, setLoading } = useAuthStore();
+  const { setSession, setProfile, setLoading, setError } = useAuthStore();
 
   useEffect(() => {
     let active = true;
@@ -25,11 +25,18 @@ export function useAuthInit() {
 
     void (async () => {
       try {
+        setError(null);
         const initial = await getSession();
         if (!active) return;
         const currentRevision = ++revision;
         setSession(initial);
         await apply(initial?.userId ?? null, currentRevision);
+      } catch (error) {
+        if (active) {
+          setSession(null);
+          setProfile(null);
+          setError(error instanceof Error ? error.message : "Unable to restore your session.");
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -41,7 +48,11 @@ export function useAuthInit() {
       // Supabase invokes this callback while holding its auth lock. Do not await
       // any Supabase work here; defer profile loading until that lock is released.
       window.setTimeout(() => {
-        void apply(session?.userId ?? null, currentRevision);
+        void apply(session?.userId ?? null, currentRevision).catch((error: unknown) => {
+          if (active && currentRevision === revision) {
+            setError(error instanceof Error ? error.message : "Unable to load your workspace profile.");
+          }
+        });
       }, 0);
     });
 
@@ -49,7 +60,7 @@ export function useAuthInit() {
       active = false;
       unsub();
     };
-  }, [setSession, setProfile, setLoading]);
+  }, [setSession, setProfile, setLoading, setError]);
 }
 
 export async function signUp(email: string, password: string, fullName: string) {

@@ -10,6 +10,11 @@ export interface ContentListFilters {
   assigned_to: string | "all";
   platform: Platform | "all";
 }
+export interface SavedContentView {
+  id: string;
+  name: string;
+  filters: ContentListFilters;
+}
 
 interface UiState {
   sidebarCollapsed: boolean;
@@ -19,6 +24,9 @@ interface UiState {
   contentFilters: ContentListFilters;
   setContentFilters: (patch: Partial<ContentListFilters>) => void;
   resetContentFilters: () => void;
+  savedContentViews: SavedContentView[];
+  saveContentView: (name: string) => void;
+  deleteContentView: (id: string) => void;
 }
 
 const defaultFilters: ContentListFilters = {
@@ -40,6 +48,14 @@ export const useUiStore = create<UiState>()(
       setContentFilters: (patch) =>
         set((s) => ({ contentFilters: { ...s.contentFilters, ...patch } })),
       resetContentFilters: () => set({ contentFilters: defaultFilters }),
+      savedContentViews: [],
+      saveContentView: (name) => set((s) => ({
+        savedContentViews: [
+          ...s.savedContentViews.filter((view) => view.name.toLowerCase() !== name.trim().toLowerCase()),
+          { id: `view_${Date.now()}`, name: name.trim(), filters: { ...s.contentFilters } },
+        ],
+      })),
+      deleteContentView: (id) => set((s) => ({ savedContentViews: s.savedContentViews.filter((view) => view.id !== id) })),
     }),
     { name: "contentflow.ui.v1" }
   )

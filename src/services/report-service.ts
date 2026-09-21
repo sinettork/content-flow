@@ -3,7 +3,7 @@ import type { MasterStatus, Platform } from "@/lib/constants";
 import { MASTER_STATUSES, PLATFORMS } from "@/lib/constants";
 import { getAll } from "@/lib/mock/db";
 import { selectMany } from "@/lib/supabase/repository";
-import type { ContentItem, ContentPlatform } from "@/types";
+import type { ApprovalRequest, ContentItem, ContentPlatform, Notification, PublishingJob } from "@/types";
 
 export interface DashboardMetrics {
   total: number;
@@ -12,6 +12,57 @@ export interface DashboardMetrics {
   postedThisMonth: number;
   overdue: number;
   byPlatform: Record<Platform, number>;
+}
+
+export interface OperationalMetrics {
+  approvalTurnaroundHours: number | null;
+  approvalsCompleted: number;
+  publishingSucceeded: number;
+  publishingFailed: number;
+  publishingSuccessRate: number | null;
+  overdue: number;
+}
+
+export interface DailyDigest {
+  unread: number;
+  approvals: number;
+  publishingFailures: number;
+  overdue: number;
+  headline: string;
+}
+
+export function calculateOperationalMetrics(
+  approvals: ApprovalRequest[],
+  jobs: PublishingJob[],
+  overdue: ContentItem[],
+): OperationalMetrics {
+  const completed = approvals.filter((approval) => approval.decided_at);
+  const turnaround = completed
+    .map((approval) => (Date.parse(approval.decided_at!) - Date.parse(approval.created_at)) / 3600000)
+    .filter((hours) => Number.isFinite(hours) && hours >= 0);
+  const succeeded = jobs.filter((job) => job.status === "succeeded").length;
+  const failed = jobs.filter((job) => job.status === "failed").length;
+  const total = succeeded + failed;
+  return {
+    approvalTurnaroundHours: turnaround.length ? turnaround.reduce((sum, hours) => sum + hours, 0) / turnaround.length : null,
+    approvalsCompleted: completed.length,
+    publishingSucceeded: succeeded,
+    publishingFailed: failed,
+    publishingSuccessRate: total ? succeeded / total : null,
+    overdue: overdue.length,
+  };
+}
+
+export function buildDailyDigest(notifications: Notification[], metrics: OperationalMetrics): DailyDigest {
+  const unread = notifications.filter((notification) => !notification.is_read).length;
+  const approvals = notifications.filter((notification) => notification.type.includes("approval") && !notification.is_read).length;
+  const publishingFailures = notifications.filter((notification) => notification.type.includes("publish") && !notification.is_read).length;
+  const parts = [
+    unread ? `${unread} unread notification${unread === 1 ? "" : "s"}` : "No unread notifications",
+    metrics.overdue ? `${metrics.overdue} overdue item${metrics.overdue === 1 ? "" : "s"}` : "No overdue items",
+    metrics.publishingFailed ? `${metrics.publishingFailed} publishing failure${metrics.publishingFailed === 1 ? "" : "s"}` : "No publishing failures",
+  ];
+  return { unread, approvals, publishingFailures, overdue: metrics.overdue, headline: parts.join(" · ") };
 }
 
 function startOfWeek(d = new Date()): Date {
@@ -34,6 +85,15 @@ function endOfMonth(d = new Date()): Date {
 }
 
 export const reportService = {
+  async operational(): Promise<OperationalMetrics> {
+    const overdue = await this.overdue();
+    if (!isSupabaseBackend) return calculateOperationalMetrics(getAll("approval_requests") as ApprovalRequest[], [], overdue);
+    const [approvals, jobs] = await Promise.all([
+      selectMany<ApprovalRequest>("approval_requests"),
+      selectMany<PublishingJob>("publishing_jobs"),
+    ]);
+    return calculateOperationalMetrics(approvals, jobs, overdue);
+  },
   async dashboard(): Promise<DashboardMetrics> {
     const [items, platforms] = isSupabaseBackend
       ? await Promise.all([

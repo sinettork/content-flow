@@ -38,7 +38,9 @@ async function graph(path: string, params: Record<string, string>) {
 
 function redirectUrl(base: string | undefined, ok: boolean) {
   if (!base) return null;
-  const url = new URL(base);
+  let url: URL;
+  try { url = new URL(base); } catch { return null; }
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && url.hostname === "localhost")) return null;
   url.searchParams.set("facebook", ok ? "connected" : "error");
   return url.toString();
 }
@@ -49,25 +51,35 @@ Deno.serve(async (req) => {
   const state = url.searchParams.get("state");
   const oauthError = url.searchParams.get("error");
 
-  if (oauthError || !code || !state) {
+  if (!state) {
     return Response.redirect(new URL("/", req.url).toString(), 302);
   }
 
   const stateHash = await sha(state);
+  const now = new Date().toISOString();
   const { data: oauthState, error: stateError } = await db
     .from("social_oauth_states")
-    .select("id,workspace_id,user_id,expires_at,consumed_at,return_url")
+    .update({ consumed_at: now })
     .eq("state_hash", stateHash)
     .eq("provider", "facebook")
+    .is("consumed_at", null)
+    .gt("expires_at", now)
+    .select("id,workspace_id,user_id,expires_at,consumed_at,return_url")
     .maybeSingle();
 
   if (
     stateError ||
     !oauthState ||
-    oauthState.consumed_at ||
-    new Date(oauthState.expires_at) < new Date()
+    !redirectUrl(oauthState.return_url, true)
   ) {
     return new Response("Invalid or expired OAuth state", { status: 400 });
+  }
+
+  if (oauthError || !code) {
+    return Response.redirect(
+      redirectUrl(oauthState.return_url, false) ?? new URL("/", req.url).toString(),
+      302,
+    );
   }
 
   const appId = Deno.env.get("META_APP_ID");
@@ -208,11 +220,6 @@ Deno.serve(async (req) => {
         console.error("Instagram account sync failed", error);
       }
     }
-
-    await db
-      .from("social_oauth_states")
-      .update({ consumed_at: new Date().toISOString() })
-      .eq("id", oauthState.id);
 
     return Response.redirect(
       redirectUrl(oauthState.return_url, true) ?? new URL("/", req.url).toString(),

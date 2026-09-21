@@ -29,6 +29,10 @@ interface ContentActor {
   role: Role | null | undefined;
   userId: string;
 }
+export interface BulkContentPatch {
+  master_status?: MasterStatus;
+  assigned_to?: string | null;
+}
 
 export interface ContentReadiness {
   isReady: boolean;
@@ -178,6 +182,18 @@ export const contentService = {
 
     if (isSupabaseBackend) return updateOne<ContentItem>("content_items", id, patch);
     return (update("content_items", id, patch) as ContentItem | undefined) ?? null;
+  },
+
+  async bulkUpdate(ids: string[], patch: BulkContentPatch, actor: ContentActor): Promise<ContentItem[]> {
+    if (!hasMinRole(actor.role ?? "viewer", PERMISSIONS.editContent)) {
+      throw new Error("You do not have permission to update content.");
+    }
+    const updated: ContentItem[] = [];
+    for (const id of ids) {
+      const item = await this.update(id, patch, actor);
+      if (item) updated.push(item);
+    }
+    return updated;
   },
 
   async setStatus(

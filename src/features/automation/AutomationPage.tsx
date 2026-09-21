@@ -34,7 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { automationService, type AutomationRule, type AutomationRun, type SocialConnection, type AutomationTrigger } from "@/services/automation-service";
+import { automationService, connectionHealth, publishingReadiness, type AutomationRule, type AutomationRun, type SocialConnection, type AutomationTrigger } from "@/services/automation-service";
 import { dryRunRule } from "@/services/automation-service";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
@@ -172,6 +172,7 @@ export function AutomationPage() {
   const staleConnection = (connection: SocialConnection) =>
     connection.status === "error" || connection.status === "disconnected" ||
     (connection.last_synced_at ? Date.now() - Date.parse(connection.last_synced_at) > 24 * 60 * 60 * 1000 : true);
+  const publishingChecks = (["facebook", "instagram", "tiktok"] as const).map((platform) => publishingReadiness(platform, connections));
 
   return (
     <>
@@ -262,17 +263,37 @@ export function AutomationPage() {
               </div>
             ) : connections.map((connection) => {
               const Icon = providerIcons[connection.provider];
+              const health = connectionHealth(connection);
               return (
                 <div key={connection.id} className="flex items-center gap-3 rounded-md border p-3">
                   <Icon className="h-4 w-4" />
                   <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{connection.name}</p><p className="text-xs text-muted-foreground capitalize">{connection.provider} · {connection.status}</p></div>
-                  <div className="text-right"><Badge variant={connection.status === "active" ? "default" : "secondary"}>{connection.status}</Badge>{staleConnection(connection) && <p className="mt-1 text-[11px] text-amber-600">Needs sync</p>}</div>
+                  <div className="text-right"><Badge variant={health === "healthy" ? "default" : health === "action_required" ? "destructive" : "secondary"}>{health}</Badge>{staleConnection(connection) && <p className="mt-1 text-[11px] text-amber-600">Sync or reconnect</p>}</div>
                 </div>
               );
             })}
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Publishing readiness</CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">Connection health is separate from live publishing capability. No provider publish action is simulated.</p>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          {publishingChecks.map((check) => (
+            <div key={check.platform} className="rounded-md border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium capitalize">{check.platform}</p>
+                <Badge variant={check.connection === "connected" ? "secondary" : check.connection === "unhealthy" ? "destructive" : "outline"}>{check.connection}</Badge>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">{check.reason}</p>
+              <p className="mt-2 text-xs font-medium">{check.nextStep}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader>

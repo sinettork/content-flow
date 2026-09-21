@@ -1,4 +1,4 @@
-import { AlertTriangle, CalendarClock, Layers, Send } from "lucide-react";
+import { AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, Layers, Send } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -9,11 +9,12 @@ import { ContentStatusBadge } from "@/components/content/ContentStatusBadge";
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate, formatDateTime } from "@/lib/dates";
-import { reportService, platformService } from "@/services";
-import type { DashboardMetrics } from "@/services/report-service";
+import { notificationService, reportService, platformService } from "@/services";
+import { buildDailyDigest, type DashboardMetrics, type DailyDigest, type OperationalMetrics } from "@/services/report-service";
+import { useAuthStore } from "@/stores/auth-store";
 import type { ContentItem, ContentPlatform } from "@/types";
 
 type Tab = "scheduled" | "posted" | "overdue";
@@ -26,6 +27,9 @@ export function ReportsPage() {
   const [posted, setPosted] = useState<ContentItem[]>([]);
   const [overdue, setOverdue] = useState<ContentItem[]>([]);
   const [platformMap, setPlatformMap] = useState<Record<string, ContentPlatform[]>>({});
+  const [operational, setOperational] = useState<OperationalMetrics | null>(null);
+  const [digest, setDigest] = useState<DailyDigest | null>(null);
+  const userId = useAuthStore((s) => s.user?.id);
 
   useEffect(() => {
     (async () => {
@@ -42,8 +46,14 @@ export function ReportsPage() {
 
       const allItems = [...sched, ...post, ...over];
       setPlatformMap(await platformService.listForItems([...new Set(allItems.map((item) => item.id))]));
+      const [operationalMetrics, notifications] = await Promise.all([
+        reportService.operational(),
+        userId ? notificationService.listForUser(userId) : Promise.resolve([]),
+      ]);
+      setOperational(operationalMetrics);
+      setDigest(buildDailyDigest(notifications, operationalMetrics));
     })();
-  }, []);
+  }, [userId]);
 
   const tabs: { key: Tab; label: string; count: number }[] = [
     { key: "scheduled", label: "Scheduled", count: scheduled.length },
@@ -135,6 +145,17 @@ export function ReportsPage() {
           <MetricCard label="Posted this month" value={metrics.postedThisMonth} icon={<Send className="h-4 w-4" />} />
           <MetricCard label="Overdue" value={overdue.length} icon={<AlertTriangle className="h-4 w-4" />} />
         </div>
+      )}
+      {operational && digest && (
+        <>
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard label="Approval turnaround" value={operational.approvalTurnaroundHours === null ? "—" : `${operational.approvalTurnaroundHours.toFixed(1)}h`} icon={<Clock3 className="h-4 w-4" />} />
+            <MetricCard label="Publishing success" value={operational.publishingSuccessRate === null ? "—" : `${Math.round(operational.publishingSuccessRate * 100)}%`} icon={<CheckCircle2 className="h-4 w-4" />} />
+            <MetricCard label="Publishing failures" value={operational.publishingFailed} icon={<AlertTriangle className="h-4 w-4" />} />
+            <MetricCard label="Daily digest" value={digest.unread} icon={<Bell className="h-4 w-4" />} />
+          </div>
+          <Card className="mb-6"><CardContent className="flex flex-wrap items-center justify-between gap-3 py-4"><div><p className="text-sm font-semibold">Today’s operational digest</p><p className="text-sm text-muted-foreground">{digest.headline}</p></div><Button variant="outline" onClick={() => navigate("/app/notifications")}>Open notifications</Button></CardContent></Card>
+        </>
       )}
 
       <div className="mb-4 flex gap-1">

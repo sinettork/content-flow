@@ -1,4 +1,4 @@
-import { CalendarClock, Filter, Layers, Megaphone, Plus, Search, SlidersHorizontal, UserRound, X } from "lucide-react";
+import { CalendarClock, CheckSquare, Filter, Layers, Megaphone, Plus, Search, SlidersHorizontal, UserRound, X } from "lucide-react";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/useDebounce";
-import { usePermission } from "@/hooks/usePermission";
+import { usePermission, useRole } from "@/hooks/usePermission";
 import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { MASTER_STATUSES, PLATFORMS , STATUS_ACCENTS } from "@/lib/constants";
 import { formatDate } from "@/lib/dates";
@@ -28,12 +28,15 @@ export function ContentListPage() {
   const navigate = useNavigate();
   const workspaceId = useAuthStore((s) => s.profile?.workspace_id);
   const canCreate = usePermission("createContent");
-  const { contentFilters, setContentFilters, resetContentFilters } = useUiStore();
+  const { contentFilters, setContentFilters, resetContentFilters, savedContentViews, saveContentView, deleteContentView } = useUiStore();
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [platformMap, setPlatformMap] = useState<Record<string, ContentPlatform[]>>({});
+  const [selected, setSelected] = useState<string[]>([]);
+  const { role } = useRole();
+  const canBulkEdit = usePermission("editContent");
 
   const debouncedSearch = useDebounce(contentFilters.search, 250);
 
@@ -71,6 +74,17 @@ export function ContentListPage() {
       .join("")
       .slice(0, 2)
       .toUpperCase();
+
+  const applyBulk = async (patch: { master_status?: ContentItem["master_status"]; assigned_to?: string | null }) => {
+    if (!canBulkEdit || !selected.length || !role) return;
+    try {
+      await contentService.bulkUpdate(selected, patch, { role, userId: useAuthStore.getState().user?.id ?? "" });
+      setSelected([]);
+      await load();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <>
@@ -189,8 +203,17 @@ export function ContentListPage() {
               )}
             </div>
           )}
+          <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-2.5">
+            <Select value="" onChange={(e) => { const view = savedContentViews.find((item) => item.id === e.target.value); if (view) setContentFilters(view.filters); }}>
+              <option value="">Saved views</option>{savedContentViews.map((view) => <option key={view.id} value={view.id}>{view.name}</option>)}
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => { const name = window.prompt("Name this view"); if (name?.trim()) saveContentView(name); }}>Save current view</Button>
+            {savedContentViews.length > 0 && <Button variant="ghost" size="sm" onClick={() => { const view = savedContentViews.find((item) => item.filters.search === contentFilters.search && item.filters.status === contentFilters.status); if (view) deleteContentView(view.id); }}>Remove matching view</Button>}
+          </div>
         </CardContent>
       </Card>
+
+      {canBulkEdit && selected.length > 0 && <Card className="mb-4 border-primary/30"><CardContent className="flex flex-wrap items-center gap-2 p-3"><CheckSquare className="h-4 w-4 text-primary" /><span className="mr-2 text-sm font-medium">{selected.length} selected</span><Select value="" onChange={(e) => { if (e.target.value) void applyBulk({ master_status: e.target.value as ContentItem["master_status"] }); }}><option value="">Set status…</option>{MASTER_STATUSES.map((status) => <option key={status} value={status}>{status.replace(/_/g, " ")}</option>)}</Select><Select value="" onChange={(e) => { if (e.target.value) void applyBulk({ assigned_to: e.target.value === "__none" ? null : e.target.value }); }}><option value="">Assign to…</option><option value="__none">Unassigned</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.full_name}</option>)}</Select><Button variant="ghost" size="sm" onClick={() => setSelected([])}>Clear</Button></CardContent></Card>}
 
       {/* Table */}
       {items.length === 0 ? (
@@ -212,6 +235,7 @@ export function ContentListPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 uppercase tracking-wider hover:bg-muted/30">
+                <TableHead className="w-10"><input type="checkbox" aria-label="Select all visible content" checked={items.length > 0 && items.every((item) => selected.includes(item.id))} onChange={(event) => setSelected(event.target.checked ? items.map((item) => item.id) : [])} /></TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>
                   <span className="flex items-center gap-1.5">
@@ -253,6 +277,9 @@ export function ContentListPage() {
                       className="group cursor-pointer hover:bg-muted/40"
                       onClick={() => navigate(`/app/content/${item.id}`)}
                     >
+                      <TableCell onClick={(event) => event.stopPropagation()} className="w-10">
+                        <input type="checkbox" aria-label={`Select ${item.title}`} checked={selected.includes(item.id)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, item.id] : current.filter((id) => id !== item.id))} />
+                      </TableCell>
                       <TableCell className="font-medium transition-colors duration-100 group-hover:text-primary">
                         <span className="flex items-center gap-2">
                           <span className={cn("h-7 w-1 rounded-full", STATUS_ACCENTS[item.master_status])} />

@@ -14,6 +14,14 @@ export interface MockSession {
 type Listener = (session: MockSession | null) => void;
 const listeners = new Set<Listener>();
 
+export function isValidMockSession(value: unknown): value is MockSession {
+  if (!value || typeof value !== "object") return false;
+  const session = value as Partial<MockSession>;
+  return typeof session.userId === "string" &&
+    typeof session.email === "string" &&
+    typeof session.createdAt === "string";
+}
+
 function emit(session: MockSession | null) {
   for (const l of listeners) l(session);
 }
@@ -23,7 +31,12 @@ export function getSession(): MockSession | null {
   const raw = window.localStorage.getItem(SESSION_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as MockSession;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isValidMockSession(parsed)) {
+      window.localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
