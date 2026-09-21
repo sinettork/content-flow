@@ -7,7 +7,8 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";\nimport { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { fromNow } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -58,7 +59,8 @@ export function AssetsPage() {
   const [assets, setAssets] = useState<ContentAsset[]>([]);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState<"all" | ContentAsset["category"]>("all");
-  const [uploadCategory, setUploadCategory] = useState<ContentAsset["category"]>("design");\n  const [query, setQuery] = useState("");
+  const [uploadCategory, setUploadCategory] = useState<ContentAsset["category"]>("design");
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     const list = await assetService.listForWorkspace(workspaceId);
