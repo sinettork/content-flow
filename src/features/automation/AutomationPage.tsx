@@ -85,7 +85,7 @@ export function AutomationPage() {
   const [runs, setRuns] = useState<AutomationRun[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);\n  const [connectingFacebook, setConnectingFacebook] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -231,6 +231,10 @@ export function AutomationPage() {
             <p className="mt-1 text-sm text-muted-foreground">Provider credentials stay server-side.</p>
           </CardHeader>
           <CardContent className="space-y-2">
+            <Button className="mb-2 w-full justify-start" variant="outline" onClick={() => void connectFacebook()} disabled={connectingFacebook}>
+              <Facebook className="mr-2 h-4 w-4" />
+              {connectingFacebook ? "Connecting…" : "Connect Facebook Page"}
+            </Button>
             {connections.length === 0 ? (
               <div className="rounded-md border border-dashed p-5 text-center">
                 <Settings2 className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
