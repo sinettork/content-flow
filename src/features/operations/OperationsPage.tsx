@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";\nimport { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";\nimport { Textarea } from "@/components/ui/textarea";
 import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { fromNow } from "@/lib/dates";
 import { contentService, workflowService } from "@/services";
@@ -25,7 +25,7 @@ export function OperationsPage() {
   const [approvalSearch, setApprovalSearch] = useState("");
   const [jobStatus, setJobStatus] = useState<"all" | PublishingJob["status"]>("all");
   const [jobSearch, setJobSearch] = useState("");
-  const [retrying, setRetrying] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);\n  const [reviewRequest, setReviewRequest] = useState<{ id: string; decision: "approved" | "changes_requested" } | null>(null);\n  const [reviewNote, setReviewNote] = useState("");
   const canReview = profile?.role === "admin" || profile?.role === "manager";
   const workspaceId = profile?.workspace_id ?? "";
 
@@ -45,17 +45,21 @@ export function OperationsPage() {
   useEffect(() => { load().catch((error: Error) => toast("Could not load operations", { description: error.message, variant: "destructive" })); }, [load]);
   useWorkspaceRealtime(workspaceId, load);
 
-  const decide = async (id: string, decision: "approved" | "changes_requested") => {
+  const decide = async (id: string, decision: "approved" | "changes_requested", note?: string) => {
     try {
-      const note = decision === "changes_requested"
-        ? window.prompt("What should be changed? (optional)") ?? undefined
-        : undefined;
-      await workflowService.decide(id, decision, userId, note);
+      await workflowService.decide(id, decision, userId, note?.trim() || undefined);
       toast(decision === "approved" ? "Content approved" : "Changes requested", { variant: "success" });
+      setReviewRequest(null);
+      setReviewNote("");
       await load();
     } catch (error) {
       toast("Review failed", { description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
     }
+  };
+
+  const openDecision = (id: string, decision: "approved" | "changes_requested") => {
+    setReviewRequest({ id, decision });
+    setReviewNote("");
   };
 
   const retry = async (id: string) => {
@@ -88,7 +92,7 @@ export function OperationsPage() {
             {visibleApprovals.length === 0 ? <EmptyState title="Approval queue is clear" description="Submitted content will appear here." /> : visibleApprovals.map((request) => (
               <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
                 <div className="min-w-0"><p className="font-medium">{titles[request.content_item_id] ?? "Content item"}</p><p className="text-xs text-muted-foreground">Requested {fromNow(request.created_at)} · {contentItems[request.content_item_id]?.priority ?? "medium"} priority · {contentItems[request.content_item_id]?.content_type ?? "content"}</p>{contentItems[request.content_item_id]?.brief && <p className="mt-1 text-sm text-muted-foreground">{contentItems[request.content_item_id].brief}</p>}</div>
-                {canReview && <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => decide(request.id, "changes_requested")}><X className="mr-1 h-4 w-4" />Changes</Button><Button size="sm" onClick={() => decide(request.id, "approved")}><Check className="mr-1 h-4 w-4" />Approve</Button></div>}
+                {canReview && <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => openDecision(request.id, "changes_requested")}><X className="mr-1 h-4 w-4" />Changes</Button><Button size="sm" onClick={() => openDecision(request.id, "approved")}><Check className="mr-1 h-4 w-4" />Approve</Button></div>}
               </div>
             ))}
           </CardContent>
@@ -113,6 +117,34 @@ export function OperationsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={Boolean(reviewRequest)} onOpenChange={(open) => { if (!open) { setReviewRequest(null); setReviewNote(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{reviewRequest?.decision === "approved" ? "Approve content" : "Request changes"}</DialogTitle>
+            <DialogDescription>
+              {reviewRequest?.decision === "approved"
+                ? "Confirm that this content is ready for the next workflow step."
+                : "Add a clear note so the owner knows what to change before resubmitting."}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={reviewNote}
+            onChange={(event) => setReviewNote(event.target.value)}
+            placeholder={reviewRequest?.decision === "approved" ? "Optional approval note…" : "What should be changed?"}
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setReviewRequest(null); setReviewNote(""); }}>Cancel</Button>
+            <Button
+              variant={reviewRequest?.decision === "approved" ? "default" : "destructive"}
+              onClick={() => reviewRequest && void decide(reviewRequest.id, reviewRequest.decision, reviewNote)}
+            >
+              {reviewRequest?.decision === "approved" ? "Approve content" : "Request changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
