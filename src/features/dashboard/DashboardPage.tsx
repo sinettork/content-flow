@@ -103,6 +103,39 @@ export function DashboardPage() {
         ))}
       </div>
 
+      <Card className="mt-6 border-primary/20 bg-primary/[0.03]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold">Needs attention</CardTitle>
+          <p className="text-sm font-normal text-muted-foreground">The work that should be handled before you browse the rest of the workspace.</p>
+        </CardHeader>
+        <CardContent className="grid gap-2 sm:grid-cols-3">
+          <Button
+            variant="ghost"
+            className="h-auto justify-between rounded-lg border bg-background px-3 py-3 text-left"
+            onClick={() => { setContentFilters({ status: "in_review" }); navigate("/app/content"); }}
+          >
+            <span><span className="block text-sm font-medium">Needs review</span><span className="text-xs text-muted-foreground">Waiting for approval</span></span>
+            <Badge variant="secondary">{metrics.byStatus.in_review}</Badge>
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-auto justify-between rounded-lg border bg-background px-3 py-3 text-left"
+            onClick={() => navigate("/app/my-work")}
+          >
+            <span><span className="block text-sm font-medium">Overdue</span><span className="text-xs text-muted-foreground">Past the due date</span></span>
+            <Badge variant={metrics.overdue > 0 ? "destructive" : "secondary"}>{metrics.overdue}</Badge>
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-auto justify-between rounded-lg border bg-background px-3 py-3 text-left"
+            onClick={() => navigate("/app/operations")}
+          >
+            <span><span className="block text-sm font-medium">Publishing</span><span className="text-xs text-muted-foreground">Open approval & recovery queue</span></span>
+            <Badge variant="secondary">{metrics.scheduledThisWeek}</Badge>
+          </Button>
+        </CardContent>
+      </Card>
+
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Upcoming */}
         <Card className="lg:col-span-1">
