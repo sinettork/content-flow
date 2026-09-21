@@ -35,9 +35,10 @@ export function MyWorkPage() {
     const overdue: ContentItem[] = [];
     const todayItems: ContentItem[] = [];
     const upcoming: ContentItem[] = [];
+    const undated: ContentItem[] = [];
     for (const item of items) {
       if (!item.due_at) {
-        upcoming.push(item);
+        undated.push(item);
         continue;
       }
       const due = new Date(item.due_at);
@@ -45,7 +46,7 @@ export function MyWorkPage() {
       else if (due < tomorrow) todayItems.push(item);
       else if (due < weekEnd) upcoming.push(item);
     }
-    return { overdue, todayItems, upcoming };
+    return { overdue, todayItems, upcoming, undated };
   }, [items]);
 
   const section = (title: string, list: ContentItem[], icon: ReactNode) => (
@@ -68,10 +69,11 @@ export function MyWorkPage() {
   return (
     <>
       <PageHeader title="My Work" description="A focused queue of content assigned to you, starting with what needs attention today." />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {section("Overdue", groups.overdue, <Clock3 className="h-4 w-4 text-destructive" />)}
         {section("Due today", groups.todayItems, <CheckCircle2 className="h-4 w-4 text-amber-500" />)}
         {section("Next 7 days", groups.upcoming, <CalendarClock className="h-4 w-4 text-primary" />)}
+        {section("No due date", groups.undated, <CalendarClock className="h-4 w-4 text-muted-foreground" />)}
       </div>
     </>
   );
