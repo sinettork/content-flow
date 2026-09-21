@@ -35,7 +35,30 @@ export function onAuthChange(listener: (session: AppSession | null) => void | Pr
   return () => data.subscription.unsubscribe();
 }
 
-export async function signUp(email: string, password: string, fullName: string) {\n  if (!isSupabaseBackend) return { error: { message: "Registration is unavailable in the local demo." }, needsEmailConfirmation: false };\n  const { data, error } = await requireSupabase().auth.signUp({\n    email,\n    password,\n    options: { data: { full_name: fullName }, emailRedirectTo: `${window.location.origin}/auth/sign-in` },\n  });\n  return { error: error ? { message: error.message } : null, needsEmailConfirmation: !data.session };\n}\n\nexport async function signIn(email: string, password: string) {
+export async function signUp(email: string, password: string, fullName: string) {
+  if (!isSupabaseBackend) {
+    return {
+      error: { message: "Registration is unavailable in the local demo." },
+      needsEmailConfirmation: false,
+    };
+  }
+
+  const { data, error } = await requireSupabase().auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName },
+      emailRedirectTo: `${window.location.origin}/auth/sign-in`,
+    },
+  });
+
+  return {
+    error: error ? { message: error.message } : null,
+    needsEmailConfirmation: !data.session,
+  };
+}
+
+export async function signIn(email: string, password: string) {
   if (!isSupabaseBackend) return mock.signIn(email, password);
   const { error } = await requireSupabase().auth.signInWithPassword({ email, password });
   return { error: error ? { message: error.message } : null };
