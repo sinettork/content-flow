@@ -1,0 +1,9 @@
+create table if not exists public.social_oauth_states (id uuid primary key default gen_random_uuid(),workspace_id uuid not null references public.workspaces(id) on delete cascade,user_id uuid not null references auth.users(id) on delete cascade,provider text not null,state_hash text not null unique,expires_at timestamptz not null,consumed_at timestamptz,created_at timestamptz not null default now());
+create index if not exists social_oauth_states_expiry_idx on public.social_oauth_states(expires_at);
+alter table public.social_oauth_states enable row level security;
+create policy social_oauth_states_select on public.social_oauth_states for select to authenticated using (workspace_id=current_workspace_id());
+revoke insert,update,delete on public.social_oauth_states from public,anon,authenticated;
+create or replace function public.store_social_secret(p_name text,p_value text) returns text language plpgsql security definer set search_path=public,vault as $$ declare v_id uuid; begin v_id:=vault.create_secret(p_value,p_name); return v_id::text; end; $$;
+revoke all on function public.store_social_secret(text,text) from public,anon,authenticated; grant execute on function public.store_social_secret(text,text) to service_role;
+create or replace function public.read_social_secret(p_id text) returns text language sql security definer set search_path=public,vault as $$ select decrypted_secret from vault.decrypted_secrets where id=p_id::uuid limit 1; $$;
+revoke all on function public.read_social_secret(text) from public,anon,authenticated; grant execute on function public.read_social_secret(text) to service_role;
