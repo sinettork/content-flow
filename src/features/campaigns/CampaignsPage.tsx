@@ -1,5 +1,5 @@
 import { CalendarDays, Paintbrush, Pencil, Plus, Tags, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";\nimport { useNavigate } from "react-router-dom";
 
 import { CampaignColorDot } from "@/components/campaigns/CampaignColorDot";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -40,7 +40,7 @@ interface FormState {
 const emptyForm: FormState = { name: "", status: "active", color: "#6366f1", start_date: "", end_date: "" };
 
 export function CampaignsPage() {
-  const workspaceId = useAuthStore((s) => s.profile?.workspace_id) ?? "";
+  const navigate = useNavigate();\n  const workspaceId = useAuthStore((s) => s.profile?.workspace_id) ?? "";
   const ownerId = useAuthStore((s) => s.profile?.id) ?? "";
   const canManage = usePermission("manageCampaigns");
 
@@ -146,7 +146,11 @@ export function CampaignsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {campaigns.map((c) => (
-            <Card key={c.id}>
+            <Card
+              key={c.id}
+              className="cursor-pointer transition-colors hover:border-primary/30 hover:bg-muted/10"
+              onClick={() => navigate(`/app/campaigns/${c.id}`)}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="flex items-center gap-2">
                   <CampaignColorDot color={c.color} />
@@ -165,7 +169,7 @@ export function CampaignsPage() {
                 </div>
                 {canManage && (
                   <div className="flex gap-1 pt-1">
-                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => openEdit(c)}>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={(event) => { event.stopPropagation(); openEdit(c); }}>
                       <Pencil className="mr-1 h-3 w-3" /> Edit
                     </Button>
                     <ConfirmDialog
