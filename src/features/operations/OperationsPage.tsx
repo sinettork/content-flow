@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";\nimport { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";\nimport { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { fromNow } from "@/lib/dates";
 import { contentService, workflowService } from "@/services";
@@ -25,7 +27,9 @@ export function OperationsPage() {
   const [approvalSearch, setApprovalSearch] = useState("");
   const [jobStatus, setJobStatus] = useState<"all" | PublishingJob["status"]>("all");
   const [jobSearch, setJobSearch] = useState("");
-  const [retrying, setRetrying] = useState<string | null>(null);\n  const [reviewRequest, setReviewRequest] = useState<{ id: string; decision: "approved" | "changes_requested" } | null>(null);\n  const [reviewNote, setReviewNote] = useState("");
+  const [retrying, setRetrying] = useState<string | null>(null);
+  const [reviewRequest, setReviewRequest] = useState<{ id: string; decision: "approved" | "changes_requested" } | null>(null);
+  const [reviewNote, setReviewNote] = useState("");
   const canReview = profile?.role === "admin" || profile?.role === "manager";
   const workspaceId = profile?.workspace_id ?? "";
 
