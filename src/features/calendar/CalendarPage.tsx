@@ -83,7 +83,15 @@ export function CalendarPage() {
 
   return (
     <>
-      <PageHeader title="Calendar" description="Scheduled content by date." />
+      <PageHeader
+        title="Calendar"
+        description="Plan and review when content is scheduled to publish."
+        actions={
+          <Button onClick={() => navigate("/app/content/new")}>
+            New content
+          </Button>
+        }
+      />
       <CalendarToolbar
         title={MONTH_FORMAT.format(currentDate)}
         view={view}
