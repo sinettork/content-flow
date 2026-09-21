@@ -89,6 +89,10 @@ export function ContentDetailPage() {
   if (!item) return <EmptyState title="Content not found" description="The item may have been deleted." />;
 
   const allowedTransitions = contentService.allowedTransitions(item.master_status, role);
+  const recommendedTransition =
+    item.master_status === "in_review" && allowedTransitions.includes("approved")
+      ? "approved"
+      : allowedTransitions[0];
 
   return (
     <>
@@ -129,7 +133,7 @@ export function ContentDetailPage() {
         }
       />
 
-      {allowedTransitions.length > 0 && (
+      {recommendedTransition && (
         <Card className="mb-6 border-primary/20 bg-primary/[0.03]">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
@@ -151,7 +155,7 @@ export function ContentDetailPage() {
             <Button
               type="button"
               onClick={async () => {
-                const nextStatus = allowedTransitions[0];
+                const nextStatus = recommendedTransition;
                 try {
                   await contentService.setStatus(item.id, nextStatus, { role, userId });
                   toast(`Moved to ${STATUS_LABELS[nextStatus]}`, { variant: "success" });
@@ -162,7 +166,7 @@ export function ContentDetailPage() {
               }}
             >
               <ChevronRight className="mr-1 h-4 w-4" />
-              {STATUS_LABELS[allowedTransitions[0]]}
+              {STATUS_LABELS[recommendedTransition]}
             </Button>
           </CardContent>
         </Card>
