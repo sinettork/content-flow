@@ -132,9 +132,12 @@ export function ContentDetailPage() {
   if (!item) return <EmptyState title="Content not found" description="The item may have been deleted." />;
 
   const allowedTransitions = contentService.allowedTransitions(item.master_status, role);
-  const recommendedTransition = item.master_status === "in_review" && allowedTransitions.includes("approved")
-    ? "approved"
+  const recommendedTransition = item.master_status === "in_review"
+    ? (can("approveContent") && allowedTransitions.includes("approved") ? "approved" : undefined)
     : allowedTransitions[0];
+  const secondaryTransition = item.master_status === "in_review" && can("approveContent") && allowedTransitions.includes("changes_requested")
+    ? "changes_requested"
+    : undefined;
   const primaryActionLabel = recommendedTransition
     ? PRIMARY_ACTION_LABELS[recommendedTransition] ?? STATUS_LABELS[recommendedTransition]
     : null;
@@ -207,10 +210,17 @@ export function ContentDetailPage() {
             </p>
           </div>
           {recommendedTransition && primaryActionLabel && can("changeStatus") && (
-            <Button size="sm" onClick={() => void moveTo(recommendedTransition)}>
-              {primaryActionLabel}
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {secondaryTransition && (
+                <Button size="sm" variant="outline" onClick={() => void moveTo(secondaryTransition)}>
+                  Request changes
+                </Button>
+              )}
+              <Button size="sm" onClick={() => void moveTo(recommendedTransition)}>
+                {primaryActionLabel}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
           )}
         </div>
 
