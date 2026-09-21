@@ -232,7 +232,7 @@ export function ContentListPage() {
         />
       ) : (
         <Card className="overflow-hidden">
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow className="bg-muted/30 uppercase tracking-wider hover:bg-muted/30">
                 <TableHead className="w-10"><input type="checkbox" aria-label="Select all visible content" checked={items.length > 0 && items.every((item) => selected.includes(item.id))} onChange={(event) => setSelected(event.target.checked ? items.map((item) => item.id) : [])} /></TableHead>
@@ -327,7 +327,7 @@ export function ContentListPage() {
                   );
                 })}
             </TableBody>
-          </Table>
+          </Table></div>
         </Card>
       )}
     </>
