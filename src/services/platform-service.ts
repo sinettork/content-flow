@@ -4,6 +4,32 @@ import { findBy, findById, genId, insert, remove, removeWhere, update } from "@/
 import { deleteOne, deleteWhere, insertOne, selectMany, selectOne, updateOne } from "@/lib/supabase/repository";
 import type { ContentPlatform } from "@/types";
 
+export interface PlatformValidation {
+  platform: Platform;
+  valid: boolean;
+  warnings: string[];
+  captionLength: number;
+  preview: string;
+}
+
+const CAPTION_LIMITS: Record<Platform, number> = {
+  facebook: 63206,
+  instagram: 2200,
+  tiktok: 2200,
+  telegram: 4096,
+  youtube_shorts: 5000,
+};
+
+export function validatePlatformContent(platform: Platform, caption: string, hashtags = ""): PlatformValidation {
+  const text = `${caption}${hashtags ? ` ${hashtags}` : ""}`.trim();
+  const warnings: string[] = [];
+  const limit = CAPTION_LIMITS[platform];
+  if (!caption.trim()) warnings.push("Caption is empty.");
+  if (text.length > limit) warnings.push(`Caption exceeds the ${limit.toLocaleString()} character limit.`);
+  if (hashtags && !hashtags.includes("#")) warnings.push("Hashtags should include # prefixes.");
+  return { platform, valid: warnings.length === 0, warnings, captionLength: text.length, preview: text };
+}
+
 export const platformService = {
   async listForItem(contentItemId: string): Promise<ContentPlatform[]> {
     if (isSupabaseBackend) {

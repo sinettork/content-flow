@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -81,6 +82,7 @@ export function TeamPage() {
       <PageHeader
         title="Team"
         description={`${members.length} member${members.length !== 1 ? "s" : ""}`}
+        actions={<Button asChild variant="outline"><Link to="/app/team/workload">View workload</Link></Button>}
       />
 
       {isSupabaseBackend && canManage && (

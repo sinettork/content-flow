@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { automationService, type AutomationRule, type AutomationRun, type SocialConnection, type AutomationTrigger } from "@/services/automation-service";
+import { dryRunRule } from "@/services/automation-service";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
 
@@ -87,6 +88,7 @@ export function AutomationPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [connectingFacebook, setConnectingFacebook] = useState(false);
+  const [dryRun, setDryRun] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -167,6 +169,9 @@ export function AutomationPage() {
   const enabledCount = rules.filter((rule) => rule.enabled).length;
   const successfulRuns = runs.filter((run) => run.status === "succeeded").length;
   const failedRuns = runs.filter((run) => run.status === "failed").length;
+  const staleConnection = (connection: SocialConnection) =>
+    connection.status === "error" || connection.status === "disconnected" ||
+    (connection.last_synced_at ? Date.now() - Date.parse(connection.last_synced_at) > 24 * 60 * 60 * 1000 : true);
 
   return (
     <>
@@ -231,7 +236,7 @@ export function AutomationPage() {
                     <Button variant="ghost" size="icon" onClick={() => void toggleRule(rule)} title={rule.enabled ? "Pause" : "Enable"}>
                       {rule.enabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </Button>
-                    <Button variant="ghost" size="icon" disabled title="More actions"><MoreHorizontal className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDryRun(rule.id)} title="Run safety check"><MoreHorizontal className="h-4 w-4" /></Button>
                   </div>
                 );
               })
@@ -261,7 +266,7 @@ export function AutomationPage() {
                 <div key={connection.id} className="flex items-center gap-3 rounded-md border p-3">
                   <Icon className="h-4 w-4" />
                   <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{connection.name}</p><p className="text-xs text-muted-foreground capitalize">{connection.provider} · {connection.status}</p></div>
-                  <Badge variant={connection.status === "active" ? "default" : "secondary"}>{connection.status}</Badge>
+                  <div className="text-right"><Badge variant={connection.status === "active" ? "default" : "secondary"}>{connection.status}</Badge>{staleConnection(connection) && <p className="mt-1 text-[11px] text-amber-600">Needs sync</p>}</div>
                 </div>
               );
             })}
@@ -307,6 +312,18 @@ export function AutomationPage() {
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button disabled={!form.name.trim()} onClick={() => void createRule()}>Create automation</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={Boolean(dryRun)} onOpenChange={(value) => !value && setDryRun(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Automation safety check</DialogTitle><DialogDescription>Dry-run validation only. No event is created and no action is sent.</DialogDescription></DialogHeader>
+          {dryRun && (() => {
+            const rule = rules.find((item) => item.id === dryRun);
+            if (!rule) return null;
+            const result = dryRunRule(rule);
+            return <div className="space-y-2">{result.checks.map((check) => <div key={check.label} className="rounded border p-2 text-sm"><p className={check.passed ? "text-emerald-700" : "text-destructive"}>{check.passed ? "Pass" : "Review"} · {check.label}</p><p className="text-xs text-muted-foreground">{check.detail}</p></div>)}<Badge variant={result.safe ? "default" : "destructive"}>{result.safe ? "Safe to enable" : "Needs attention"}</Badge></div>;
+          })()}
+          <DialogFooter><Button onClick={() => setDryRun(null)}>Close</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </>

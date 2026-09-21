@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Briefcase, CalendarClock, ClipboardList, FileText, Flag, Save, Tag, UserRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, Briefcase, CalendarClock, CheckCircle2, ClipboardList, Copy, FileText, Flag, Save, Tag, UserRound } from "lucide-react";
 import { type ChangeEvent, useEffect, useState } from "react";
 import { type Path, useForm } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
@@ -14,12 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useRole } from "@/hooks/usePermission";
+import { usePermission, useRole } from "@/hooks/usePermission";
 import { CONTENT_TYPES, MASTER_STATUSES, PRIORITIES } from "@/lib/constants";
-import { contentService, campaignService, profileService, activityService } from "@/services";
+import { contentService, campaignService, profileService, activityService, platformService, getContentReadiness } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
-import type { Campaign, ContentItem, Profile } from "@/types";
+import type { Campaign, ContentItem, ContentPlatform, Profile } from "@/types";
 
 const schema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -39,6 +39,7 @@ export function ContentFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { role } = useRole();
+  const canCreate = usePermission("createContent");
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
   const isEdit = Boolean(id);
@@ -46,6 +47,7 @@ export function ContentFormPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [existing, setExisting] = useState<ContentItem | null>(null);
+  const [platforms, setPlatforms] = useState<ContentPlatform[]>([]);
 
   const {
     register,
@@ -82,6 +84,7 @@ export function ContentFormPage() {
         const item = await contentService.get(id);
         if (item) {
           setExisting(item);
+          setPlatforms(await platformService.listForItem(item.id));
           reset({
             title: item.title,
             content_type: item.content_type,
@@ -97,6 +100,24 @@ export function ContentFormPage() {
       }
     })();
   }, [id, profile?.workspace_id, reset]);
+
+  const readiness = getContentReadiness({
+    title: watch("title"),
+    brief: watch("brief"),
+    campaign_id: watch("campaign_id"),
+    assigned_to: watch("assigned_to"),
+  }, platforms);
+
+  const duplicate = async () => {
+    if (!existing || !user || !canCreate) return;
+    try {
+      const copy = await contentService.duplicate(existing.id, { userId: user.id });
+      toast("Draft copy created", { variant: "success" });
+      navigate(`/app/content/${copy.id}/edit`);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Unable to duplicate content.", { variant: "destructive" });
+    }
+  };
 
   const onSubmit = async (values: FormValues) => {
     const workspace_id = profile?.workspace_id ?? "";
@@ -180,9 +201,10 @@ export function ContentFormPage() {
       <PageHeader
         title={isEdit ? "Edit content" : "New content"}
         actions={
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-1 h-4 w-4" /> Back
-          </Button>
+          <div className="flex gap-2">
+            {isEdit && canCreate && <Button type="button" variant="outline" size="sm" onClick={duplicate}><Copy className="mr-1 h-4 w-4" /> Duplicate as draft</Button>}
+            <Button variant="outline" size="sm" onClick={() => navigate(-1)}><ArrowLeft className="mr-1 h-4 w-4" /> Back</Button>
+          </div>
         }
       />
 
@@ -283,6 +305,15 @@ export function ContentFormPage() {
             </CardHeader>
             <CardContent>
               <Textarea {...register("brief")} rows={4} placeholder="Content brief, notes, instructions…" />
+            </CardContent>
+          </Card>
+          <Card className="lg:col-span-2">
+            <CardHeader><CardTitle className="flex items-center gap-2 text-sm"><CheckCircle2 className="h-4 w-4 text-muted-foreground" />Readiness</CardTitle></CardHeader>
+            <CardContent>
+              <p className="mb-3 text-xs text-muted-foreground">Complete these checks before sending content for review or scheduling.</p>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {readiness.checks.map((check) => <div key={check.key} className="flex items-center gap-2 text-sm">{check.complete ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertCircle className="h-4 w-4 text-amber-600" />}<span className={check.complete ? "text-foreground" : "text-muted-foreground"}>{check.label}</span></div>)}
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -11,7 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Bot, Eye, Filter, Plus, Sparkles } from "lucide-react";
+import { Bot, Eye, Filter, Plus, Search, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -20,6 +20,8 @@ import { BoardColumn } from "@/components/board/BoardColumn";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useRole } from "@/hooks/usePermission";
 import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { MASTER_STATUSES, type MasterStatus } from "@/lib/constants";
@@ -78,6 +80,10 @@ export function BoardPage() {
   const [profileMap, setProfileMap] = useState<Record<string, Profile>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragStartStatus, setDragStartStatus] = useState<MasterStatus | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<MasterStatus | "all">("all");
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -95,9 +101,14 @@ export function BoardPage() {
   useEffect(() => { load(); }, [load]);
   useWorkspaceRealtime(workspaceId, load);
 
+  const visibleItems = items.filter((item) =>
+    (statusFilter === "all" || item.master_status === statusFilter) &&
+    (assigneeFilter === "all" || item.assigned_to === assigneeFilter) &&
+    (!query.trim() || item.title.toLowerCase().includes(query.trim().toLowerCase()))
+  );
   const grouped: Record<string, ContentItem[]> = {};
   for (const col of BOARD_COLUMNS) grouped[col] = [];
-  for (const it of items) {
+  for (const it of visibleItems) {
     if (grouped[it.master_status]) grouped[it.master_status].push(it);
   }
 
@@ -203,7 +214,7 @@ export function BoardPage() {
             <Sparkles className="h-3.5 w-3.5" />
             Main board
           </Badge>
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+          <Button variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => setFilterOpen((open) => !open)}>
             <Eye className="h-3.5 w-3.5" />
             Kanban
           </Button>
@@ -212,6 +223,25 @@ export function BoardPage() {
             Filter
           </Button>
         </div>
+        {filterOpen && (
+          <div className="mb-4 grid gap-2 rounded-xl border bg-card p-3 md:grid-cols-[minmax(180px,1fr)_180px_180px_auto]">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search cards…" className="pl-8" />
+            </div>
+            <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as MasterStatus | "all")}>
+              <option value="all">All statuses</option>
+              {BOARD_COLUMNS.map((status) => <option key={status} value={status}>{LABELS[status]}</option>)}
+            </Select>
+            <Select value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)}>
+              <option value="all">All assignees</option>
+              {Object.values(profileMap).map((profile) => <option key={profile.id} value={profile.id}>{profile.full_name}</option>)}
+            </Select>
+            <Button variant="outline" onClick={() => { setQuery(""); setStatusFilter("all"); setAssigneeFilter("all"); }}>
+              <X className="h-3.5 w-3.5" /> Clear
+            </Button>
+          </div>
+        )}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Bot className="h-3.5 w-3.5" />
           Drag a card to update its status

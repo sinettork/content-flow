@@ -18,6 +18,7 @@ import {
   Menu,
   ChevronsLeft,
   ListChecks,
+  UserCheck,
   Bot,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
@@ -48,6 +49,7 @@ import { useUiStore } from "@/stores/ui-store";
 
 const NAV = [
   { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/app/my-work", label: "My Work", icon: UserCheck },
   { to: "/app/content", label: "Content", icon: FileText },
   { to: "/app/board", label: "Board", icon: Kanban },
   { to: "/app/calendar", label: "Calendar", icon: Calendar },

@@ -315,5 +315,17 @@ export const SEED: MockDatabase = {
       created_at: now,
     },
   ],
-  approval_requests: [],
+  approval_requests: [
+    {
+      id: "ar_1",
+      workspace_id: WS_ID,
+      content_item_id: "ci_2",
+      requested_by: "u_editor",
+      reviewed_by: null,
+      decision: null,
+      decision_note: null,
+      created_at: now,
+      decided_at: null,
+    },
+  ],
 };

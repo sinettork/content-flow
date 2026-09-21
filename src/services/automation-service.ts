@@ -73,6 +73,20 @@ export interface AutomationRuleInput {
   created_by: string;
 }
 
+export interface AutomationDryRun {
+  safe: boolean;
+  checks: Array<{ label: string; passed: boolean; detail: string }>;
+}
+
+export function dryRunRule(rule: Pick<AutomationRule, "trigger_type" | "actions" | "conditions">): AutomationDryRun {
+  const checks = [
+    { label: "Trigger configured", passed: Boolean(rule.trigger_type), detail: rule.trigger_type ? `Runs on ${rule.trigger_type.replace(/_/g, " ")}.` : "Select a trigger." },
+    { label: "Action configured", passed: rule.actions.length > 0, detail: rule.actions.length ? `${rule.actions.length} action(s) will run.` : "Add at least one action." },
+    { label: "Conditions bounded", passed: rule.conditions.length <= 5, detail: rule.conditions.length <= 5 ? `${rule.conditions.length} condition(s) checked.` : "Limit rules to five conditions for predictable execution." },
+  ];
+  return { checks, safe: checks.every((check) => check.passed) };
+}
+
 export const automationService = {
   async listRules(): Promise<AutomationRule[]> {
     if (!isSupabaseBackend) return [];

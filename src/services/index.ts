@@ -1,6 +1,9 @@
-export { contentService } from "./content-service";
+export { contentService, getContentReadiness } from "./content-service";
+export type { ContentReadiness } from "./content-service";
 export { campaignService } from "./campaign-service";
 export { platformService } from "./platform-service";
+export { validatePlatformContent } from "./platform-service";
+export type { PlatformValidation } from "./platform-service";
 export { commentService } from "./comment-service";
 export { activityService } from "./activity-service";
 export { assetService } from "./asset-service";
@@ -12,3 +15,6 @@ export type { WorkspaceSettings, AutomationRule } from "./settings-service";
 export { workflowService } from "./workflow-service";
 export { invitationService } from "./invitation-service";
 export { automationService } from "./automation-service";
+export { workspaceService } from "./workspace-service";
+export { coordinationService } from "./coordination-service";
+export type { CampaignRisk, MemberWorkload } from "./coordination-service";

@@ -27,10 +27,12 @@ import { fromNow, formatDate } from "@/lib/dates";
 import { reportService, activityService, profileService } from "@/services";
 import type { DashboardMetrics } from "@/services/report-service";
 import { useAuthStore } from "@/stores/auth-store";
+import { useUiStore } from "@/stores/ui-store";
 import type { ActivityLog, ContentItem, Profile } from "@/types";
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const setContentFilters = useUiStore((s) => s.setContentFilters);
   const workspaceId = useAuthStore((s) => s.profile?.workspace_id);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [upcoming, setUpcoming] = useState<ContentItem[]>([]);
@@ -64,12 +66,12 @@ export function DashboardPage() {
 
   const metricCards = [
     { label: "Total content", value: metrics.total, icon: <FileText className="h-4 w-4" /> },
-    { label: "Drafts", value: metrics.byStatus.draft, icon: <FilePenLine className="h-4 w-4" /> },
-    { label: "In review", value: metrics.byStatus.in_review, icon: <Eye className="h-4 w-4" /> },
-    { label: "Approved", value: metrics.byStatus.approved, icon: <CheckCircle2 className="h-4 w-4" /> },
-    { label: "Scheduled this week", value: metrics.scheduledThisWeek, icon: <CalendarClock className="h-4 w-4" /> },
-    { label: "Posted this month", value: metrics.postedThisMonth, icon: <Send className="h-4 w-4" /> },
-    { label: "Overdue", value: metrics.overdue, icon: <AlertTriangle className="h-4 w-4" /> },
+    { label: "Drafts", value: metrics.byStatus.draft, status: "draft" as const, icon: <FilePenLine className="h-4 w-4" /> },
+    { label: "In review", value: metrics.byStatus.in_review, status: "in_review" as const, icon: <Eye className="h-4 w-4" /> },
+    { label: "Approved", value: metrics.byStatus.approved, status: "approved" as const, icon: <CheckCircle2 className="h-4 w-4" /> },
+    { label: "Scheduled this week", value: metrics.scheduledThisWeek, icon: <CalendarClock className="h-4 w-4" />, destination: "/app/calendar" },
+    { label: "Posted this month", value: metrics.postedThisMonth, status: "posted" as const, icon: <Send className="h-4 w-4" /> },
+    { label: "Overdue", value: metrics.overdue, icon: <AlertTriangle className="h-4 w-4" />, destination: "/app/my-work" },
   ];
 
   return (
@@ -87,7 +89,17 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metricCards.map((m) => (
-          <MetricCard key={m.label} label={m.label} value={m.value} icon={m.icon} />
+          <button
+            key={m.label}
+            type="button"
+            className="text-left transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => {
+              if (m.status) setContentFilters({ status: m.status });
+              navigate(m.destination ?? "/app/content");
+            }}
+          >
+            <MetricCard label={m.label} value={m.value} icon={m.icon} />
+          </button>
         ))}
       </div>
 

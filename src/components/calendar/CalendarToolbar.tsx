@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-type CalendarView = "month" | "week" | "day";
+type CalendarView = "month" | "agenda";
 
 interface CalendarToolbarProps {
   title: string;
@@ -14,7 +14,7 @@ interface CalendarToolbarProps {
 }
 
 export function CalendarToolbar({ title, view, onViewChange, onPrev, onNext, onToday }: CalendarToolbarProps) {
-  const views: CalendarView[] = ["month", "week", "day"];
+  const views: CalendarView[] = ["month", "agenda"];
   return (
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center gap-2">

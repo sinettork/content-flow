@@ -6,6 +6,7 @@ import { PlatformLegend } from "@/components/calendar/PlatformLegend";
 import { PageHeader } from "@/components/common/PageHeader";
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Button } from "@/components/ui/button";
+import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { contentService, platformService } from "@/services";
 import type { ContentItem, ContentPlatform } from "@/types";
@@ -56,6 +57,7 @@ export function CalendarPage() {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
+  const [view, setView] = useState<"month" | "agenda">("month");
 
   useEffect(() => {
     (async () => {
@@ -84,15 +86,41 @@ export function CalendarPage() {
       <PageHeader title="Calendar" description="Scheduled content by date." />
       <CalendarToolbar
         title={MONTH_FORMAT.format(currentDate)}
-        view="month"
-        onViewChange={() => {}}
+        view={view}
+        onViewChange={setView}
         onPrev={() => setCurrentDate(addMonths(currentDate, -1))}
         onNext={() => setCurrentDate(addMonths(currentDate, 1))}
         onToday={() => setCurrentDate(new Date())}
       />
       <PlatformLegend />
 
-      <div className="mt-4 rounded-lg border">
+      {view === "agenda" ? (
+        <div className="mt-4 space-y-3">
+          {Object.entries(entriesByDate)
+            .filter(([key]) => {
+              const date = new Date(`${key}T00:00:00`);
+              return isSameMonth(date, currentDate);
+            })
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, dayEntries]) => (
+              <div key={key} className="rounded-lg border bg-card p-3">
+                <h3 className="mb-2 text-sm font-semibold">{new Intl.DateTimeFormat(undefined, { weekday: "long", month: "short", day: "numeric" }).format(new Date(`${key}T00:00:00`))}</h3>
+                <div className="space-y-1">
+                  {dayEntries.map((entry) => (
+                    <Button key={entry.item.id} variant="ghost" className="h-auto w-full justify-start gap-2 px-2 py-2 text-left" onClick={() => navigate(`/app/content/${entry.item.id}`)}>
+                      {entry.platforms[0] && <PlatformBadge platform={entry.platforms[0].platform_name} className="scale-75" />}
+                      <span className="truncate font-medium">{entry.item.title}</span>
+                      <span className="ml-auto text-xs text-muted-foreground">{formatDate(entry.item.scheduled_at, "h:mm a")}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          {entries.filter((entry) => entry.item.scheduled_at && isSameMonth(new Date(entry.item.scheduled_at), currentDate)).length === 0 && (
+            <p className="rounded-lg border p-8 text-center text-sm text-muted-foreground">Nothing scheduled this month.</p>
+          )}
+        </div>
+      ) : <div className="mt-4 rounded-lg border">
         {/* Header row */}
         <div className="grid grid-cols-7 border-b bg-muted/30">
           {weekDays.map((d) => (
@@ -147,7 +175,7 @@ export function CalendarPage() {
             );
           })}
         </div>
-      </div>
+      </div>}
     </>
   );
 }

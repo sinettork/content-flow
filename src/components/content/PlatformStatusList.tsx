@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { validatePlatformContent } from "@/services/platform-service";
 import type { ContentPlatform } from "@/types";
 
 import { PlatformBadge } from "./PlatformBadge";
@@ -35,6 +36,15 @@ export function PlatformStatusList({ platforms, onEdit }: PlatformStatusListProp
             <div className="text-xs text-muted-foreground">
               {p.scheduled_at ? `Scheduled: ${formatDateTime(p.scheduled_at)}` : "Not scheduled"}
             </div>
+            {(() => {
+              const validation = validatePlatformContent(p.platform_name, p.caption, p.hashtags);
+              return (
+                <div className="max-w-md space-y-1 text-xs">
+                  <p className="line-clamp-2 text-foreground/80">{validation.preview || "No caption preview"}</p>
+                  {validation.warnings.map((warning) => <p key={warning} className="text-amber-600">{warning}</p>)}
+                </div>
+              );
+            })()}
             {p.post_url && (
               <a href={p.post_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                 View post ↗

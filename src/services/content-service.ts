@@ -15,7 +15,7 @@ import { activityService } from "@/services/activity-service";
 import { assetService } from "@/services/asset-service";
 import { commentService } from "@/services/comment-service";
 import { platformService } from "@/services/platform-service";
-import type { ContentItem } from "@/types";
+import type { ContentItem, ContentPlatform } from "@/types";
 
 export interface ContentFilters {
   search?: string;
@@ -28,6 +28,23 @@ export interface ContentFilters {
 interface ContentActor {
   role: Role | null | undefined;
   userId: string;
+}
+
+export interface ContentReadiness {
+  isReady: boolean;
+  checks: Array<{ key: string; label: string; complete: boolean }>;
+}
+
+export function getContentReadiness(item: Pick<ContentItem, "title" | "brief" | "campaign_id" | "assigned_to">, platforms: Pick<ContentPlatform, "checklist_completed">[] = []): ContentReadiness {
+  const checks = [
+    { key: "title", label: "Title added", complete: Boolean(item.title.trim()) },
+    { key: "brief", label: "Brief added", complete: Boolean(item.brief?.trim()) },
+    { key: "campaign", label: "Campaign selected", complete: Boolean(item.campaign_id) },
+    { key: "assignee", label: "Owner assigned", complete: Boolean(item.assigned_to) },
+    { key: "platform", label: "At least one platform configured", complete: platforms.length > 0 },
+    { key: "checklist", label: "Platform checklists complete", complete: platforms.length > 0 && platforms.every((platform) => platform.checklist_completed) },
+  ];
+  return { checks, isReady: checks.every((check) => check.complete) };
 }
 
 export const contentService = {
@@ -107,6 +124,45 @@ export const contentService = {
       updated_at: now,
     };
     return insert("content_items", row) as ContentItem;
+  },
+
+  async duplicate(id: string, actor: { userId: string }): Promise<ContentItem> {
+    const source = await this.get(id);
+    if (!source) throw new Error("Content item not found.");
+    const copy = await this.create({
+      workspace_id: source.workspace_id,
+      campaign_id: source.campaign_id,
+      title: `${source.title} (Copy)`,
+      content_type: source.content_type,
+      master_status: "draft",
+      priority: source.priority,
+      brief: source.brief,
+      thumbnail_asset_id: null,
+      created_by: actor.userId,
+      assigned_to: source.assigned_to,
+      approved_by: null,
+      approved_at: null,
+      due_at: null,
+      scheduled_at: null,
+      posted_at: null,
+      archived_at: null,
+    });
+    const sourcePlatforms = await platformService.listForItem(source.id);
+    await Promise.all(sourcePlatforms.map((platform) => platformService.create({
+      workspace_id: platform.workspace_id,
+      content_item_id: copy.id,
+      platform_name: platform.platform_name,
+      platform_status: "draft",
+      caption: platform.caption,
+      hashtags: platform.hashtags,
+      scheduled_at: null,
+      posted_at: null,
+      post_url: null,
+      posted_by: null,
+      checklist_completed: false,
+      notes: platform.notes,
+    })));
+    return copy;
   },
 
   async update(id: string, patch: Partial<ContentItem>, actor?: ContentActor): Promise<ContentItem | null> {

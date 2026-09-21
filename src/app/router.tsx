@@ -21,6 +21,7 @@ const CalendarPage = lazy(() => import("@/features/calendar/CalendarPage").then(
 const CampaignsPage = lazy(() => import("@/features/campaigns/CampaignsPage").then((m) => ({ default: m.CampaignsPage })));
 const CampaignDetailPage = lazy(() => import("@/features/campaigns/CampaignDetailPage").then((m) => ({ default: m.CampaignDetailPage })));
 const TeamPage = lazy(() => import("@/features/team/TeamPage").then((m) => ({ default: m.TeamPage })));
+const TeamWorkloadPage = lazy(() => import("@/features/team/TeamWorkloadPage").then((m) => ({ default: m.TeamWorkloadPage })));
 const ReportsPage = lazy(() => import("@/features/reports/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
@@ -28,6 +29,8 @@ const NotificationsPage = lazy(() => import("@/features/notifications/Notificati
 const AssetsPage = lazy(() => import("@/features/assets/AssetsPage").then((m) => ({ default: m.AssetsPage })));
 const OperationsPage = lazy(() => import("@/features/operations/OperationsPage").then((m) => ({ default: m.OperationsPage })));
 const AutomationPage = lazy(() => import("@/features/automation/AutomationPage").then((m) => ({ default: m.AutomationPage })));
+const WorkspaceOnboardingPage = lazy(() => import("@/features/workspace/WorkspaceOnboardingPage").then((m) => ({ default: m.WorkspaceOnboardingPage })));
+const MyWorkPage = lazy(() => import("@/features/workspace/MyWorkPage").then((m) => ({ default: m.MyWorkPage })));
 
 function PageLoader() {
   return <AppLoader label="Loading" delay={900} />;
@@ -47,10 +50,13 @@ export function AppRouter() {
           <Route path="update-password" element={<UpdatePasswordPage />} />
         </Route>
 
+        <Route path="/app/onboarding" element={<WorkspaceOnboardingPage />} />
+
         <Route element={<ProtectedRoute />}>
           <Route path="/app" element={<DashboardLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="my-work" element={<MyWorkPage />} />
             <Route path="content" element={<ContentListPage />} />
             <Route path="content/new" element={<ContentFormPage />} />
             <Route path="content/:id" element={<ContentDetailPage />} />
@@ -63,6 +69,7 @@ export function AppRouter() {
             <Route path="operations" element={<OperationsPage />} />
             <Route path="automation" element={<AutomationPage />} />
             <Route path="team" element={<TeamPage />} />
+            <Route path="team/workload" element={<TeamWorkloadPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="notifications" element={<NotificationsPage />} />

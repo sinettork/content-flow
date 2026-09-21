@@ -5,6 +5,11 @@ import { requireSupabase } from "@/lib/supabase/client";
 import { selectMany } from "@/lib/supabase/repository";
 import type { ApprovalRequest, ContentVersion, PublishingJob } from "@/types";
 
+export interface PublishingJobFilters {
+  status?: PublishingJob["status"] | "all";
+  search?: string;
+}
+
 export const workflowService = {
   async pendingApprovals(): Promise<ApprovalRequest[]> {
     if (isSupabaseBackend) {
@@ -58,8 +63,31 @@ export const workflowService = {
     );
   },
 
-  async publishingJobs(): Promise<PublishingJob[]> {
+  async publishingJobs(filters: PublishingJobFilters = {}): Promise<PublishingJob[]> {
     if (!isSupabaseBackend) return [];
-    return selectMany<PublishingJob>("publishing_jobs", (q) => q.order("run_at", { ascending: false }).limit(100));
+    return selectMany<PublishingJob>("publishing_jobs", (q) => {
+      let query = q.order("run_at", { ascending: false }).limit(100);
+      if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
+      if (filters.search?.trim()) query = query.ilike("last_error", `%${filters.search.trim()}%`);
+      return query;
+    });
+  },
+
+  async retryPublishingJob(id: string): Promise<PublishingJob> {
+    if (!isSupabaseBackend) throw new Error("Retry is only available when publishing integrations are configured.");
+    const { data, error } = await requireSupabase()
+      .from("publishing_jobs")
+      .update({
+        status: "queued",
+        run_at: new Date().toISOString(),
+        locked_at: null,
+        completed_at: null,
+        last_error: null,
+      })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data as PublishingJob;
   },
 };
