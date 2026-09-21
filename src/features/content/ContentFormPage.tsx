@@ -244,12 +244,26 @@ export function ContentFormPage() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="master_status">Status</Label>
-                <Select id="master_status" name="master_status" {...selectValue("master_status")}>
-                  {statusOptions.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-                </Select>
-              </div>
+              {isEdit ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="master_status">Status</Label>
+                  <Select id="master_status" name="master_status" {...selectValue("master_status")}>
+                    {statusOptions.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
+                  </Select>
+                </div>
+              ) : (
+                <div className="rounded-md border bg-muted/30 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">Starts as draft</p>
+                      <p className="text-xs text-muted-foreground">You can send it for review after saving.</p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium capitalize text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      Draft
+                    </span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
