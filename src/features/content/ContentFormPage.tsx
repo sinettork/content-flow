@@ -293,7 +293,8 @@ export function ContentFormPage() {
                 className="hidden"
                 onChange={(event) => {
                   if (event.target.files) {
-                    setPendingFiles((current) => [...current, ...Array.from(event.target.files)]);
+                    const files = event.target.files;
+                    if (files) setPendingFiles((current) => [...current, ...Array.from(files)]);
                     event.target.value = "";
                   }
                 }}
