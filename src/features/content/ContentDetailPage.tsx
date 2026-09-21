@@ -8,6 +8,7 @@ import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
+import { ContentAssetsSection } from "@/components/content/ContentAssetsSection";
 import { ContentStatusBadge } from "@/components/content/ContentStatusBadge";
 import { PlatformStatusList } from "@/components/content/PlatformStatusList";
 import { ActivityTimeline } from "@/components/tables/ActivityTimeline";
@@ -27,6 +28,14 @@ import type { Campaign, ContentItem, ContentPlatform, Profile, ActivityLog, Cont
 const STATUS_LABELS: Record<MasterStatus, string> = {
   draft: "Draft", in_review: "In Review", changes_requested: "Changes Requested",
   approved: "Approved", scheduled: "Scheduled", posted: "Posted", archived: "Archived",
+};
+
+const STATUS_ACTION_LABELS: Partial<Record<MasterStatus, string>> = {
+  in_review: "Send for review",
+  changes_requested: "Request changes",
+  approved: "Approve",
+  scheduled: "Schedule",
+  posted: "Mark as published",
 };
 
 export function ContentDetailPage() {
@@ -94,6 +103,8 @@ export function ContentDetailPage() {
       ? "approved"
       : allowedTransitions[0];
 
+  const primaryActionLabel = recommendedTransition ? (STATUS_ACTION_LABELS[recommendedTransition] ?? STATUS_LABELS[recommendedTransition]) : null;
+
   return (
     <>
       <Breadcrumbs items={[
@@ -133,44 +144,45 @@ export function ContentDetailPage() {
         }
       />
 
-      {recommendedTransition && (
-        <Card className="mb-6 border-primary/20 bg-primary/[0.03]">
-          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+      <Card className="mb-6 border-primary/20 bg-primary/[0.03]">
+        <CardContent className="p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold">Next step</p>
-              <p className="text-sm text-muted-foreground">
-                {item.master_status === "draft"
-                  ? "Send this draft for review when the brief and platforms are ready."
-                  : item.master_status === "in_review"
-                    ? "Review the feedback and move the content to the next approval state."
-                    : item.master_status === "changes_requested"
-                      ? "Apply the requested changes, then resubmit for review."
-                      : item.master_status === "approved"
-                        ? "Choose a publish time and schedule the approved content."
-                        : item.master_status === "scheduled"
-                          ? "Confirm the publishing result when this content goes live."
-                          : "Choose the next available workflow action."}
-              </p>
+              <p className="text-sm font-semibold">Content workflow</p>
+              <p className="text-xs text-muted-foreground">Keep the review cycle on this content item.</p>
             </div>
-            <Button
-              type="button"
-              onClick={async () => {
-                const nextStatus = recommendedTransition;
-                try {
-                  await contentService.setStatus(item.id, nextStatus, { role, userId });
-                  toast(`Moved to ${STATUS_LABELS[nextStatus]}`, { variant: "success" });
-                  await load();
-                } catch (error) {
-                  toast(error instanceof Error ? error.message : "Unable to update this content.", { variant: "destructive" });
-                }
-              }}
-            >
-              <ChevronRight className="mr-1 h-4 w-4" />
-              {STATUS_LABELS[recommendedTransition]}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+            {recommendedTransition && primaryActionLabel && (
+              <Button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await contentService.setStatus(item.id, recommendedTransition, { role, userId });
+                    toast(`Moved to ${STATUS_LABELS[recommendedTransition]}`, { variant: "success" });
+                    await load();
+                  } catch (error) {
+                    toast(error instanceof Error ? error.message : "Unable to update this content.", { variant: "destructive" });
+                  }
+                }}
+              >
+                <ChevronRight className="mr-1 h-4 w-4" />
+                {primaryActionLabel}
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+            {(["draft", "in_review", "changes_requested", "approved", "scheduled", "posted", "archived"] as MasterStatus[]).map((status) => (
+              <div
+                key={status}
+                className={`rounded-md border px-2.5 py-2 text-xs ${item.master_status === status ? "border-primary/30 bg-primary/10 text-primary" : "text-muted-foreground"}`}
+              >
+                <div className="font-medium">{STATUS_LABELS[status]}</div>
+                {item.master_status === status && <div className="mt-0.5 text-[10px]">Current</div>}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left column */}
@@ -261,6 +273,13 @@ export function ContentDetailPage() {
               </>
             )}
           </Card>
+
+          <ContentAssetsSection
+            contentItemId={item.id}
+            workspaceId={item.workspace_id}
+            userId={userId}
+            canEdit={can("editContent")}
+          />
 
           {/* Platforms */}
           <Card>
