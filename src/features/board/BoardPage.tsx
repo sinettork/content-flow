@@ -218,9 +218,9 @@ export function BoardPage() {
             <Eye className="h-3.5 w-3.5" />
             Kanban
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+          <Button variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => setFilterOpen((open) => !open)}>
             <Filter className="h-3.5 w-3.5" />
-            Filter
+            {filterOpen ? "Hide filters" : "Filter"}
           </Button>
         </div>
         {filterOpen && (
