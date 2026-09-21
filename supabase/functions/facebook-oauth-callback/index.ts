@@ -7,7 +7,7 @@ async function graph(path:string,params:Record<string,string>){const u=new URL(G
 function redirectUrl(base:string|undefined,ok:boolean){if(!base)return null;const u=new URL(base);u.searchParams.set("facebook",ok?"connected":"error");return u.toString();}
 Deno.serve(async req=>{
  const u=new URL(req.url);const code=u.searchParams.get("code"),state=u.searchParams.get("state"),error=u.searchParams.get("error");
- if(error||!code||!state)return Response.redirect(redirectUrl(s?.return_url,false)??new URL("/",req.url).toString(),302);
+ if(error||!code||!state)return Response.redirect(new URL("/",req.url).toString(),302);
  const hash=await sha(state);
  const {data:s,error:se}=await db.from("social_oauth_states").select("id,workspace_id,user_id,expires_at,consumed_at,return_url").eq("state_hash",hash).eq("provider","facebook").maybeSingle();
  if(se||!s||s.consumed_at||new Date(s.expires_at)<new Date())return new Response("Invalid or expired OAuth state",{status:400});
