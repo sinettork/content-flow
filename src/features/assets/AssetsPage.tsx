@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";\nimport { Input } from "@/components/ui/input";
 import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { fromNow } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -58,7 +58,7 @@ export function AssetsPage() {
   const [assets, setAssets] = useState<ContentAsset[]>([]);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState<"all" | ContentAsset["category"]>("all");
-  const [uploadCategory, setUploadCategory] = useState<ContentAsset["category"]>("design");
+  const [uploadCategory, setUploadCategory] = useState<ContentAsset["category"]>("design");\n  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     const list = await assetService.listForWorkspace(workspaceId);
@@ -182,11 +182,14 @@ export function AssetsPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="relative min-w-[240px] flex-1">
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files…" aria-label="Search assets" />
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Sparkles className="h-4 w-4 text-primary" />
               Showing <span className="font-semibold text-foreground">{visibleAssets.length}</span> asset{visibleAssets.length !== 1 ? "s" : ""}
             </div>
-            <Button variant="outline" size="sm" onClick={() => setSelectedCategory("all")}>
+            <Button variant="outline" size="sm" onClick={() => { setSelectedCategory("all"); setQuery(""); }}>
               Reset filter
             </Button>
           </div>
