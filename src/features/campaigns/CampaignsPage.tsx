@@ -1,5 +1,6 @@
 import { CalendarDays, Paintbrush, Pencil, Plus, Tags, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";\nimport { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { CampaignColorDot } from "@/components/campaigns/CampaignColorDot";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -40,7 +41,8 @@ interface FormState {
 const emptyForm: FormState = { name: "", status: "active", color: "#6366f1", start_date: "", end_date: "" };
 
 export function CampaignsPage() {
-  const navigate = useNavigate();\n  const workspaceId = useAuthStore((s) => s.profile?.workspace_id) ?? "";
+  const navigate = useNavigate();
+  const workspaceId = useAuthStore((s) => s.profile?.workspace_id) ?? "";
   const ownerId = useAuthStore((s) => s.profile?.id) ?? "";
   const canManage = usePermission("manageCampaigns");
 
