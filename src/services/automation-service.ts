@@ -141,7 +141,7 @@ export const automationService = {
 
   async connectFacebook(): Promise<void> {
     if (!isSupabaseBackend) throw new Error("Facebook integration requires the Supabase backend.");
-    const { data, error } = await requireSupabase().functions.invoke("facebook-oauth-start", { body: {} });
+    const { data, error } = await requireSupabase().functions.invoke("facebook-oauth-start", { body: { return_url: `${window.location.origin}/app/automation` } });
     if (error) throw new Error(error.message);
     const url = (data as { authorization_url?: string } | null)?.authorization_url;
     if (!url) throw new Error("Facebook authorization URL was not returned.");
