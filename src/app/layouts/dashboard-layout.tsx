@@ -18,6 +18,7 @@ import {
   Menu,
   ChevronsLeft,
   ListChecks,
+  Bot,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
@@ -53,6 +54,7 @@ const NAV = [
   { to: "/app/campaigns", label: "Campaigns", icon: Megaphone },
   { to: "/app/assets", label: "Assets", icon: FolderOpen },
   { to: "/app/operations", label: "Operations", icon: ListChecks },
+  { to: "/app/automation", label: "Automation", icon: Bot },
   { to: "/app/team", label: "Team", icon: Users },
   { to: "/app/reports", label: "Reports", icon: BarChart3 },
 ];
