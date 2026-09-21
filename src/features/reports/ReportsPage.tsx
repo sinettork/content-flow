@@ -67,7 +67,7 @@ export function ReportsPage() {
     if (items.length === 0) return <EmptyState title="No items" description="Nothing here yet." icon={<Layers className="h-6 w-6" />} />;
     return (
       <Card>
-        <Table>
+        <div className="overflow-x-auto"><Table>
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
@@ -130,7 +130,7 @@ export function ReportsPage() {
                 );
               })}
           </TableBody>
-        </Table>
+        </Table></div>
       </Card>
     );
   };
