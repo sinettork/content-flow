@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { CalendarToolbar } from "@/components/calendar/CalendarToolbar";
 import { PlatformLegend } from "@/components/calendar/PlatformLegend";
 import { PageHeader } from "@/components/common/PageHeader";
+import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
@@ -83,6 +84,7 @@ export function CalendarPage() {
 
   return (
     <>
+      <ContentWorkspaceNav />
       <PageHeader
         title="Calendar"
         description="Plan and review when content is scheduled to publish."
