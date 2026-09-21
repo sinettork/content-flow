@@ -1,5 +1,6 @@
 import { Check, Clock3, RotateCcw, Search, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -95,8 +96,19 @@ export function OperationsPage() {
           <CardContent className="space-y-3">
             {visibleApprovals.length === 0 ? <EmptyState title="Approval queue is clear" description="Submitted content will appear here." /> : visibleApprovals.map((request) => (
               <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-                <div className="min-w-0"><p className="font-medium">{titles[request.content_item_id] ?? "Content item"}</p><p className="text-xs text-muted-foreground">Requested {fromNow(request.created_at)} · {contentItems[request.content_item_id]?.priority ?? "medium"} priority · {contentItems[request.content_item_id]?.content_type ?? "content"}</p>{contentItems[request.content_item_id]?.brief && <p className="mt-1 text-sm text-muted-foreground">{contentItems[request.content_item_id].brief}</p>}</div>
-                {canReview && <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => openDecision(request.id, "changes_requested")}><X className="mr-1 h-4 w-4" />Changes</Button><Button size="sm" onClick={() => openDecision(request.id, "approved")}><Check className="mr-1 h-4 w-4" />Approve</Button></div>}
+                <div className="min-w-0 flex-1">
+                  <Link to={`/app/content/${request.content_item_id}`} className="font-medium hover:text-primary">
+                    {titles[request.content_item_id] ?? "Content item"}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">Requested {fromNow(request.created_at)} · {contentItems[request.content_item_id]?.priority ?? "medium"} priority · {contentItems[request.content_item_id]?.content_type ?? "content"}</p>
+                  {contentItems[request.content_item_id]?.brief && <p className="mt-1 text-sm text-muted-foreground">{contentItems[request.content_item_id].brief}</p>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/app/content/${request.content_item_id}`}>Open content</Link>
+                  </Button>
+                  {canReview && <><Button size="sm" variant="outline" onClick={() => openDecision(request.id, "changes_requested")}><X className="mr-1 h-4 w-4" />Request changes</Button><Button size="sm" onClick={() => openDecision(request.id, "approved")}><Check className="mr-1 h-4 w-4" />Approve</Button></>}
+                </div>
               </div>
             ))}
           </CardContent>
