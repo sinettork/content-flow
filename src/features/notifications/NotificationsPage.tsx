@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";\nimport { useNavigate } from "react-router-dom";
 
 import { PageHeader } from "@/components/common/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -30,8 +30,12 @@ export function NotificationsPage() {
     await load();
   };
 
-  const handleMarkRead = async (id: string) => {
-    await notificationService.markRead(id);
+  const handleOpen = async (notification: Notification) => {
+    await notificationService.markRead(notification.id);
+    if (notification.entity_type === "content" && notification.entity_id) {
+      navigate(`/app/content/${notification.entity_id}`);
+      return;
+    }
     await load();
   };
 
@@ -39,7 +43,7 @@ export function NotificationsPage() {
     <>
       <PageHeader
         title="Notifications"
-        description="Stay updated on content activity."
+        description="Start with the unread items that need your attention, then open the related work."
         actions={
           <Button variant="outline" size="sm" onClick={handleMarkAllRead}>
             Mark all read
@@ -58,7 +62,7 @@ export function NotificationsPage() {
           <Card
             key={n.id}
             className={cn("cursor-pointer transition-colors", !n.is_read && "border-primary/40 bg-primary/5")}
-            onClick={() => handleMarkRead(n.id)}
+            onClick={() => void handleOpen(n)}
           >
             <CardContent className="flex items-start gap-3 py-3">
               <div className="flex-1">
