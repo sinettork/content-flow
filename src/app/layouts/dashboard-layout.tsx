@@ -113,23 +113,26 @@ export function DashboardLayout() {
   const ThemeIcon = themeIcons[theme];
 
   function NavItems({ collapsed }: { collapsed: boolean }) {
-    let lastSection = "";
     return (
       <>
-        {NAV.map(({ section, to, label, icon: Icon }) => (
-          <div key={to}>
-            {section !== lastSection && (
-              <div
-                className={cn(
-                  "px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60",
-                  lastSection && "border-t border-sidebar-border/60 mt-2",
-                  collapsed && "sr-only"
-                )}
-              >
-                {section}
-              </div>
-            )}
-            <NavLink
+        {NAV.map((item, index) => {
+          const { section, to, label, icon: Icon } = item;
+          const isNewSection = index === 0 || section !== NAV[index - 1].section;
+          return (
+            <div key={to}>
+              {isNewSection && (
+                <div
+                  className={cn(
+                    collapsed
+                      ? "mx-2 my-2 border-t border-sidebar-border/60"
+                      : "px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60",
+                    !collapsed && index > 0 && "border-t border-sidebar-border/60 mt-2"
+                  )}
+                >
+                  {!collapsed && section}
+                </div>
+              )}
+              <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
@@ -151,10 +154,10 @@ export function DashboardLayout() {
                 {!collapsed && <span>{label}</span>}
               </>
             )}
-          </NavLink>
-            {void (lastSection = section)}
-          </div>
-        ))}
+            </NavLink>
+            </div>
+          );
+        })}
       </>
     );
   }
