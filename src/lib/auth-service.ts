@@ -89,8 +89,6 @@ export async function updatePassword(password: string) {
 export async function getProfileForUser(userId: string): Promise<Profile | null> {
   if (!isSupabaseBackend) return mock.getProfileForUser(userId);
   const client = requireSupabase();
-  const { error: invitationError } = await client.rpc("accept_my_invitation");
-  if (invitationError) throw new Error(invitationError.message);
   const { data, error } = await client.from("profiles").select("*").eq("id", userId).maybeSingle();
   if (error) throw error;
   return data as Profile | null;
