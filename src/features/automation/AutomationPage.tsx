@@ -85,7 +85,8 @@ export function AutomationPage() {
   const [runs, setRuns] = useState<AutomationRun[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [loading, setLoading] = useState(true);\n  const [connectingFacebook, setConnectingFacebook] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [connectingFacebook, setConnectingFacebook] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -150,7 +151,20 @@ export function AutomationPage() {
     }
   };
 
-  const connectFacebook = async () => {\n    setConnectingFacebook(true);\n    try {\n      await automationService.connectFacebook();\n    } catch (error) {\n      setConnectingFacebook(false);\n      toast("Could not connect Meta", {\n        description: error instanceof Error ? error.message : "Unknown error",\n        variant: "destructive",\n      });\n    }\n  };\n\n  const enabledCount = rules.filter((rule) => rule.enabled).length;
+  const connectFacebook = async () => {
+    setConnectingFacebook(true);
+    try {
+      await automationService.connectFacebook();
+    } catch (error) {
+      setConnectingFacebook(false);
+      toast("Could not connect Meta", {
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const enabledCount = rules.filter((rule) => rule.enabled).length;
   const successfulRuns = runs.filter((run) => run.status === "succeeded").length;
   const failedRuns = runs.filter((run) => run.status === "failed").length;
 
