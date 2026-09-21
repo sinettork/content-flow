@@ -12,6 +12,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import type { Notification } from "@/types";
 
 export function NotificationsPage() {
+  const navigate = useNavigate();
   const userId = useAuthStore((s) => s.user?.id);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
