@@ -1,4 +1,4 @@
-import { CalendarDays, Kanban, List, UserCheck } from "lucide-react";
+import { CalendarDays, FolderOpen, Kanban, List, Megaphone, UserCheck } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
@@ -8,6 +8,8 @@ const VIEWS = [
   { to: "/app/board", label: "Board", icon: Kanban },
   { to: "/app/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/app/my-work", label: "My Work", icon: UserCheck },
+  { to: "/app/campaigns", label: "Campaigns", icon: Megaphone },
+  { to: "/app/assets", label: "Assets", icon: FolderOpen },
 ];
 
 export function ContentWorkspaceNav() {
