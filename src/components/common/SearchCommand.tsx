@@ -81,7 +81,7 @@ export function SearchCommand({ open, onClose }: SearchCommandProps) {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by title or slug..."
+            placeholder="Search content by title or slug..."
             className="border-border/80 bg-background pl-8 pr-9 shadow-none focus-visible:ring-ring/15"
           />
           {query && (
@@ -146,7 +146,7 @@ export function SearchCommand({ open, onClose }: SearchCommandProps) {
               <Search className="h-5 w-5" />
             </div>
             <p className="font-medium">Start typing to search</p>
-            <p className="mt-1 text-sm text-muted-foreground">Open content directly without leaving your current page.</p>
+            <p className="mt-1 text-sm text-muted-foreground">This search currently covers content items.</p>
           </div>
         )}
         <div className="flex items-center gap-3 border-t bg-muted/20 px-5 py-3 text-[11px] text-muted-foreground">
