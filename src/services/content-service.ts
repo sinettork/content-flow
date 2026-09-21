@@ -190,7 +190,13 @@ export const contentService = {
   },
 
   async remove(id: string): Promise<boolean> {
-    if (isSupabaseBackend) return deleteOne("content_items", id);
+    if (isSupabaseBackend) {
+      // Postgres cascades the metadata rows but cannot remove objects from
+      // Storage. Remove physical assets first so deleting content never leaves
+      // private bucket orphans behind.
+      await assetService.removeForItem(id);
+      return deleteOne("content_items", id);
+    }
     await Promise.all([
       platformService.removeForItem(id),
       commentService.removeForItem(id),

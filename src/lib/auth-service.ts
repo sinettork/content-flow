@@ -55,6 +55,14 @@ export async function sendResetEmail(email: string) {
   return { error: error ? { message: error.message } : null };
 }
 
+export async function updatePassword(password: string) {
+  if (!isSupabaseBackend) {
+    return { error: { message: "Password updates are unavailable in the local demo." } };
+  }
+  const { error } = await requireSupabase().auth.updateUser({ password });
+  return { error: error ? { message: error.message } : null };
+}
+
 export async function getProfileForUser(userId: string): Promise<Profile | null> {
   if (!isSupabaseBackend) return mock.getProfileForUser(userId);
   const client = requireSupabase();

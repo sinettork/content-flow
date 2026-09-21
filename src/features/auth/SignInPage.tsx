@@ -32,14 +32,14 @@ export function SignInPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col items-center gap-2">
+      <Card>
+        <div className="flex flex-col items-center gap-2">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground text-sm font-bold shadow-md">
           CF
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
         <p className="text-center text-sm text-muted-foreground">Sign in to your ContentFlow workspace</p>
       </div>
-      <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-base">Workspace sign in</CardTitle>
           <CardDescription>Use your account or one of the demo roles below.</CardDescription>
@@ -67,7 +67,7 @@ export function SignInPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input id="password" type="password" required placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" className="rounded-lg" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Input id="password" type="password" required placeholder="Enter password" className="rounded-lg" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
             <Button type="submit" className="w-full rounded-lg" disabled={loading}>

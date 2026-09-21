@@ -7,6 +7,7 @@ import {
   signIn as appSignIn,
   signOut as appSignOut,
   sendResetEmail as appSendReset,
+  updatePassword as appUpdatePassword,
 } from "@/lib/auth-service";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -15,25 +16,32 @@ export function useAuthInit() {
 
   useEffect(() => {
     let active = true;
-    const apply = async (userId: string | null) => {
+    let revision = 0;
+    const apply = async (userId: string | null, currentRevision: number) => {
       const nextProfile = userId ? await getProfileForUser(userId) : null;
-      if (active) setProfile(nextProfile);
+      if (active && currentRevision === revision) setProfile(nextProfile);
     };
 
     void (async () => {
       try {
         const initial = await getSession();
         if (!active) return;
+        const currentRevision = ++revision;
         setSession(initial);
-        await apply(initial?.userId ?? null);
+        await apply(initial?.userId ?? null, currentRevision);
       } finally {
         if (active) setLoading(false);
       }
     })();
 
     const unsub = onAuthChange((session) => {
+      const currentRevision = ++revision;
       setSession(session);
-      return apply(session?.userId ?? null);
+      // Supabase invokes this callback while holding its auth lock. Do not await
+      // any Supabase work here; defer profile loading until that lock is released.
+      window.setTimeout(() => {
+        void apply(session?.userId ?? null, currentRevision);
+      }, 0);
     });
 
     return () => {
@@ -53,4 +61,8 @@ export async function signOut() {
 
 export async function sendResetEmail(email: string) {
   return appSendReset(email);
+}
+
+export async function updatePassword(password: string) {
+  return appUpdatePassword(password);
 }

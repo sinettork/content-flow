@@ -1,6 +1,6 @@
 import { isSupabaseBackend } from "@/lib/backend";
 import { findBy, genId, getAll, insert, removeWhere } from "@/lib/mock/db";
-import { deleteWhere, insertOne, selectMany } from "@/lib/supabase/repository";
+import { selectMany } from "@/lib/supabase/repository";
 import type { ActivityLog, Json } from "@/types";
 
 export const activityService = {
@@ -27,7 +27,8 @@ export const activityService = {
   },
 
   async removeForItem(contentItemId: string): Promise<number> {
-    if (isSupabaseBackend) return deleteWhere("activity_logs", "content_item_id", contentItemId);
+    // Supabase audit events are immutable and cascade with their content item.
+    if (isSupabaseBackend) return 0;
     return removeWhere("activity_logs", (activity) => activity.content_item_id === contentItemId);
   },
 
@@ -39,14 +40,11 @@ export const activityService = {
     old_value?: Json | null;
     new_value?: Json | null;
     metadata?: Json | null;
-  }): Promise<ActivityLog> {
+  }): Promise<ActivityLog | null> {
     if (isSupabaseBackend) {
-      return insertOne<ActivityLog>("activity_logs", {
-        ...input,
-        old_value: input.old_value ?? null,
-        new_value: input.new_value ?? null,
-        metadata: input.metadata ?? null,
-      });
+      // The database audit trigger writes the authenticated actor and canonical
+      // before/after values. Never accept an audit row from a browser client.
+      return null;
     }
     const row: ActivityLog = {
       id: genId("al"),

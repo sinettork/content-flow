@@ -10,6 +10,7 @@ import { StubPage } from "@/components/common/StubPage";
 // Lazy-loaded feature pages for code splitting
 const SignInPage = lazy(() => import("@/features/auth/SignInPage").then((m) => ({ default: m.SignInPage })));
 const ForgotPasswordPage = lazy(() => import("@/features/auth/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })));
+const UpdatePasswordPage = lazy(() => import("@/features/auth/UpdatePasswordPage").then((m) => ({ default: m.UpdatePasswordPage })));
 const DashboardPage = lazy(() => import("@/features/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })));
 const ContentListPage = lazy(() => import("@/features/content/ContentListPage").then((m) => ({ default: m.ContentListPage })));
 const ContentDetailPage = lazy(() => import("@/features/content/ContentDetailPage").then((m) => ({ default: m.ContentDetailPage })));
@@ -40,6 +41,7 @@ export function AppRouter() {
           <Route index element={<Navigate to="sign-in" replace />} />
           <Route path="sign-in" element={<SignInPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="update-password" element={<UpdatePasswordPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
