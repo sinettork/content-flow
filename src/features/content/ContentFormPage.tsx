@@ -106,12 +106,17 @@ export function ContentFormPage() {
     })();
   }, [id, profile?.workspace_id, reset]);
 
+  const readinessPlatforms = selectedPlatforms.map((platform) => {
+    const existingPlatform = platforms.find((item) => item.platform_name === platform);
+    return { checklist_completed: existingPlatform?.checklist_completed ?? false };
+  });
+
   const readiness = getContentReadiness({
     title: watch("title"),
     brief: watch("brief"),
     campaign_id: watch("campaign_id"),
     assigned_to: watch("assigned_to"),
-  }, platforms);
+  }, readinessPlatforms);
 
   const duplicate = async () => {
     if (!existing || !user || !canCreate) return;
