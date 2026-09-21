@@ -1,0 +1,5 @@
+create extension if not exists pg_cron; create extension if not exists pg_net;
+create or replace function public.get_automation_worker_secret() returns text language sql security definer set search_path=public,vault as $$ select decrypted_secret from vault.decrypted_secrets where name='contentflow_automation_worker' limit 1; $$;
+revoke all on function public.get_automation_worker_secret() from public,anon,authenticated; grant execute on function public.get_automation_worker_secret() to service_role;
+select cron.unschedule(jobid) from cron.job where jobname='contentflow-automation-runner';
+select cron.schedule('contentflow-automation-runner','* * * * *',$job$ select net.http_post(url:='https://wnedsolrcxavnmnxavzw.supabase.co/functions/v1/automation-runner',headers:=jsonb_build_object('Content-Type','application/json','x-contentflow-worker-secret',(select decrypted_secret from vault.decrypted_secrets where name='contentflow_automation_worker' limit 1)),body:='{"limit":20}'::jsonb,timeout_milliseconds:=5000); $job$);
