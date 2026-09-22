@@ -4,6 +4,13 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  CAMBODIA_GREGORIAN_LOCALE,
+  CAMBODIA_MONTH_FORMAT,
+  CAMBODIA_TIME_ZONE,
+  CAMBODIA_WEEKDAYS,
+  getCambodiaTodayDate,
+} from "@/lib/cambodia-locale";
 import { cn } from "@/lib/utils";
 
 interface DatePickerProps {
@@ -17,15 +24,20 @@ interface DatePickerProps {
 
 interface DateTimePickerProps extends DatePickerProps {}
 
-const WEEK_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const MONTH_FORMAT = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
-const DISPLAY_DATE_FORMAT = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
-const DISPLAY_DATE_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
+const DISPLAY_DATE_FORMAT = new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
   month: "short",
   day: "numeric",
   year: "numeric",
-  hour: "numeric",
+  timeZone: CAMBODIA_TIME_ZONE,
+});
+const DISPLAY_DATE_TIME_FORMAT = new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "2-digit",
   minute: "2-digit",
+  hour12: false,
+  timeZone: CAMBODIA_TIME_ZONE,
 });
 
 function pad(value: number) {
@@ -74,7 +86,8 @@ function isSameMonth(a: Date, b: Date) {
 function monthDays(month: Date) {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const start = new Date(first);
-  start.setDate(first.getDate() - first.getDay());
+  const mondayOffset = (first.getDay() + 6) % 7;
+  start.setDate(first.getDate() - mondayOffset);
 
   return Array.from({ length: 42 }, (_, index) => {
     const day = new Date(start);
@@ -90,9 +103,9 @@ function CalendarPanel({
   selected: Date | null;
   onSelect: (date: Date) => void;
 }) {
-  const [month, setMonth] = useState(selected ?? new Date());
+  const [month, setMonth] = useState(selected ?? getCambodiaTodayDate());
   const days = useMemo(() => monthDays(month), [month]);
-  const today = new Date();
+  const today = getCambodiaTodayDate();
 
   return (
     <div className="space-y-3">
@@ -100,14 +113,16 @@ function CalendarPanel({
         <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonth(addMonths(month, -1))}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="text-sm font-semibold">{MONTH_FORMAT.format(month)}</div>
+        <div className="text-sm font-semibold">
+          {CAMBODIA_MONTH_FORMAT.format(month)}
+        </div>
         <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonth(addMonths(month, 1))}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-muted-foreground">
-        {WEEK_DAYS.map((day) => (
+        {CAMBODIA_WEEKDAYS.map((day) => (
           <div key={day} className="py-1">{day}</div>
         ))}
       </div>
@@ -196,7 +211,7 @@ export function DateTimePicker({
   };
 
   const updateTime = (nextTime: string) => {
-    const base = selected ?? new Date();
+    const base = selected ?? getCambodiaTodayDate();
     const [hours = "09", minutes = "00"] = nextTime.split(":");
     const next = new Date(base);
     next.setHours(Number(hours), Number(minutes), 0, 0);
