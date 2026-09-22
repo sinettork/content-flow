@@ -1,17 +1,32 @@
-const DATE_FORMAT = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" });
-const SHORT_DATE_FORMAT = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
-const DATE_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
+import { CAMBODIA_GREGORIAN_LOCALE, CAMBODIA_TIME_ZONE } from "@/lib/cambodia-locale";
+
+const DATE_FORMAT = new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
   month: "short",
   day: "numeric",
   year: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
+  timeZone: CAMBODIA_TIME_ZONE,
 });
-const SHORT_DATE_TIME_FORMAT = new Intl.DateTimeFormat(undefined, {
+const SHORT_DATE_FORMAT = new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
   month: "short",
   day: "numeric",
-  hour: "numeric",
+  timeZone: CAMBODIA_TIME_ZONE,
+});
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "2-digit",
   minute: "2-digit",
+  hour12: false,
+  timeZone: CAMBODIA_TIME_ZONE,
+});
+const SHORT_DATE_TIME_FORMAT = new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: CAMBODIA_TIME_ZONE,
 });
 
 function parseValue(value: string | Date | null | undefined) {
@@ -58,7 +73,7 @@ export function fromNow(value: string | Date | null | undefined): string {
   ];
   const [unit, unitSeconds] = units.find(([, size]) => abs >= size) ?? ["second", 1];
 
-  return new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }).format(
+  return new Intl.RelativeTimeFormat("km-KH", { numeric: "auto" }).format(
     Math.round(seconds / unitSeconds),
     unit
   );
