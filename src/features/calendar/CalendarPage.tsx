@@ -19,9 +19,11 @@ import {
   toCambodiaDateKey,
 } from "@/lib/cambodia-locale";
 import { getCambodiaPublicHoliday } from "@/lib/cambodia-holidays";
+import { isCambodiaWorkingDay } from "@/lib/cambodia-locale";
 import { formatKhmerLunarDate } from "@/lib/khmer-lunar";
 import { cn } from "@/lib/utils";
-import { contentService, platformService } from "@/services";
+import { contentService, platformService, settingsService } from "@/services";
+import { useAuthStore } from "@/stores/auth-store";
 import type { ContentItem, ContentPlatform } from "@/types";
 
 interface ScheduledEntry {
@@ -73,18 +75,28 @@ function monthDays(month: Date) {
 
 export function CalendarPage() {
   const navigate = useNavigate();
+  const profile = useAuthStore((s) => s.profile);
   const [currentDate, setCurrentDate] = useState(getCambodiaTodayDate());
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
   const [view, setView] = useState<"month" | "agenda">("month");
+  const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [khmerLunarEnabled, setKhmerLunarEnabled] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const items = await contentService.list({});
+      const [items, settings] = await Promise.all([
+        contentService.list({}),
+        profile?.workspace_id ? settingsService.get(profile.workspace_id) : Promise.resolve(null),
+      ]);
       const scheduled = items.filter((i) => i.scheduled_at);
       const platformMap = await platformService.listForItems(scheduled.map((item) => item.id));
       setEntries(scheduled.map((item) => ({ item, platforms: platformMap[item.id] ?? [] })));
+      if (settings) {
+        setWorkingDays(settings.working_days);
+        setKhmerLunarEnabled(settings.khmer_lunar_enabled);
+      }
     })();
-  }, []);
+  }, [profile?.workspace_id]);
 
   const days = useMemo(() => monthDays(currentDate), [currentDate]);
 
@@ -141,7 +153,9 @@ export function CalendarPage() {
                 <h3 className="mb-1 text-sm font-semibold">
                   {CAMBODIA_AGENDA_DATE_FORMAT.format(new Date(`${key}T00:00:00`))}
                 </h3>
-                <p className="mb-2 text-xs text-muted-foreground">{formatKhmerLunarDate(key)}</p>
+                {khmerLunarEnabled && (
+                  <p className="mb-2 text-xs text-muted-foreground">{formatKhmerLunarDate(key)}</p>
+                )}
                 <div className="space-y-1">
                   {dayEntries.map((entry) => (
                     <Button
@@ -184,6 +198,7 @@ export function CalendarPage() {
               const dayEntries = entriesByDate[key] ?? [];
               const inMonth = isSameCalendarMonth(day, currentDate);
               const holiday = getCambodiaPublicHoliday(key);
+              const workingDay = isCambodiaWorkingDay(key, workingDays);
 
               return (
                 <div
@@ -191,7 +206,8 @@ export function CalendarPage() {
                   className={cn(
                     "min-h-[100px] border-b border-r p-1.5 text-xs",
                     !inMonth && "bg-muted/20 text-muted-foreground/50",
-                    holiday && inMonth && "bg-amber-50/60 dark:bg-amber-950/10"
+                    holiday && inMonth && "bg-amber-50/60 dark:bg-amber-950/10",
+                    !workingDay && inMonth && !holiday && "bg-muted/30"
                   )}
                   title={holiday ? holiday.nameKhmer : undefined}
                 >
@@ -206,7 +222,7 @@ export function CalendarPage() {
                     </div>
                     {holiday && inMonth && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />}
                   </div>
-                  {inMonth && (
+                  {inMonth && khmerLunarEnabled && (
                     <div className="mb-1 truncate text-[9px] text-muted-foreground/80">
                       {formatKhmerLunarDate(key)}
                     </div>
