@@ -16,6 +16,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { usePermission, useRole } from "@/hooks/usePermission";
 import { CONTENT_TYPES, MASTER_STATUSES, PLATFORMS, PRIORITIES, type Platform } from "@/lib/constants";
+import { getCambodiaPublicHoliday } from "@/lib/cambodia-holidays";
 import { assetService, contentService, campaignService, profileService, activityService, platformService, getContentReadiness } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
@@ -244,6 +245,8 @@ export function ContentFormPage() {
     value: watch(field),
     onValueChange: (value: string) => setValue(field, value, { shouldDirty: true, shouldValidate: true }),
   });
+
+  const scheduledHoliday = getCambodiaPublicHoliday(watch("scheduled_at"));
 
   const statusOptions = isEdit && existing
     ? [existing.master_status, ...contentService.allowedTransitions(existing.master_status, role)]
