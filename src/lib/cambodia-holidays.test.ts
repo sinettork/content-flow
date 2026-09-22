@@ -13,7 +13,7 @@ describe("Cambodia public holidays", () => {
   });
 
   it("keeps the 2026 source set explicit", () => {
-    expect(CAMBODIA_PUBLIC_HOLIDAYS_2026).toHaveLength(18);
+    expect(CAMBODIA_PUBLIC_HOLIDAYS_2026).toHaveLength(21);
     expect(getCambodiaPublicHoliday("2027-01-01")).toBeNull();
   });
 });
