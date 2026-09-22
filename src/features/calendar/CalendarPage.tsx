@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   CAMBODIA_GREGORIAN_LOCALE,
   CAMBODIA_TIME_ZONE,
+  CAMBODIA_WEEKDAYS,
   formatCambodiaBuddhistYear,
   formatCambodiaMonth,
   formatCambodiaTime,
@@ -95,17 +96,7 @@ export function CalendarPage() {
     return map;
   }, [entries]);
 
-  const weekDays = useMemo(() => {
-    const base = new Date(2026, 8, 21);
-    return Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(base);
-      date.setDate(base.getDate() + index);
-      return new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
-        weekday: "short",
-        timeZone: CAMBODIA_TIME_ZONE,
-      }).format(date);
-    });
-  }, []);
+  const weekDays = CAMBODIA_WEEKDAYS;
 
   const hasScheduledContent = entries.some(
     (entry) => entry.item.scheduled_at && isSameCambodiaMonth(entry.item.scheduled_at, currentDate)
