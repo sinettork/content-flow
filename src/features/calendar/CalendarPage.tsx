@@ -19,6 +19,7 @@ import {
   toCambodiaDateKey,
 } from "@/lib/cambodia-locale";
 import { getCambodiaPublicHoliday } from "@/lib/cambodia-holidays";
+import { formatKhmerLunarDate } from "@/lib/khmer-lunar";
 import { cn } from "@/lib/utils";
 import { contentService, platformService } from "@/services";
 import type { ContentItem, ContentPlatform } from "@/types";
@@ -137,9 +138,10 @@ export function CalendarPage() {
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([key, dayEntries]) => (
               <div key={key} className="rounded-lg border bg-card p-3">
-                <h3 className="mb-2 text-sm font-semibold">
+                <h3 className="mb-1 text-sm font-semibold">
                   {CAMBODIA_AGENDA_DATE_FORMAT.format(new Date(`${key}T00:00:00`))}
                 </h3>
+                <p className="mb-2 text-xs text-muted-foreground">{formatKhmerLunarDate(key)}</p>
                 <div className="space-y-1">
                   {dayEntries.map((entry) => (
                     <Button
@@ -204,6 +206,11 @@ export function CalendarPage() {
                     </div>
                     {holiday && inMonth && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />}
                   </div>
+                  {inMonth && (
+                    <div className="mb-1 truncate text-[9px] text-muted-foreground/80">
+                      {formatKhmerLunarDate(key)}
+                    </div>
+                  )}
                   {holiday && inMonth && (
                     <div className="mb-1 truncate text-[10px] font-medium text-amber-700 dark:text-amber-300">
                       {holiday.nameKhmer}
