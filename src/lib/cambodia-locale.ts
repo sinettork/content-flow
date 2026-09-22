@@ -66,6 +66,30 @@ export const CAMBODIA_WEEKDAYS = Array.from({ length: 7 }, (_, index) => {
   }).format(date);
 });
 
+export const CAMBODIA_WORKING_DAY_OPTIONS = [
+  { value: 1, label: "ចន្ទ" },
+  { value: 2, label: "អង្គារ" },
+  { value: 3, label: "ពុធ" },
+  { value: 4, label: "ព្រហស្បតិ៍" },
+  { value: 5, label: "សុក្រ" },
+  { value: 6, label: "សៅរ៍" },
+  { value: 0, label: "អាទិត្យ" },
+] as const;
+
+export function getCambodiaWeekdayIndex(value: string | Date | null | undefined) {
+  const parts = getCambodiaDateParts(value);
+  if (!parts) return null;
+  return new Date(parts.year, parts.month - 1, parts.day).getDay();
+}
+
+export function isCambodiaWorkingDay(
+  value: string | Date | null | undefined,
+  workingDays: number[]
+) {
+  const weekday = getCambodiaWeekdayIndex(value);
+  return weekday === null ? false : workingDays.includes(weekday);
+}
+
 export const CAMBODIA_MONTH_FORMAT = new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
   month: "long",
   year: "numeric",
