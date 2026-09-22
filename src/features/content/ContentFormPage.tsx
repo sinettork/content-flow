@@ -17,7 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { usePermission, useRole } from "@/hooks/usePermission";
 import { CONTENT_TYPES, MASTER_STATUSES, PLATFORMS, PRIORITIES, type Platform } from "@/lib/constants";
 import { getCambodiaPublicHoliday } from "@/lib/cambodia-holidays";
-import { assetService, contentService, campaignService, profileService, activityService, platformService, getContentReadiness } from "@/services";
+import { isCambodiaWorkingDay } from "@/lib/cambodia-locale";
+import { assetService, contentService, campaignService, profileService, activityService, platformService, getContentReadiness, settingsService } from "@/services";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
 import type { Campaign, ContentItem, ContentPlatform, Profile } from "@/types";
@@ -52,6 +53,7 @@ export function ContentFormPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);
   const [platformDrafts, setPlatformDrafts] = useState<Record<string, { caption: string; hashtags: string }>>({});
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
 
   const {
     register,
@@ -77,12 +79,14 @@ export function ContentFormPage() {
 
   useEffect(() => {
     (async () => {
-      const [camps, profs] = await Promise.all([
+      const [camps, profs, settings] = await Promise.all([
         campaignService.list(),
         profileService.listForWorkspace(profile?.workspace_id ?? ""),
+        profile?.workspace_id ? settingsService.get(profile.workspace_id) : Promise.resolve(null),
       ]);
       setCampaigns(camps);
       setProfiles(profs);
+      if (settings) setWorkingDays(settings.working_days);
 
       if (id) {
         const item = await contentService.get(id);
@@ -246,7 +250,9 @@ export function ContentFormPage() {
     onValueChange: (value: string) => setValue(field, value, { shouldDirty: true, shouldValidate: true }),
   });
 
-  const scheduledHoliday = getCambodiaPublicHoliday(watch("scheduled_at"));
+  const scheduledValue = watch("scheduled_at");
+  const scheduledHoliday = getCambodiaPublicHoliday(scheduledValue);
+  const scheduledOnWorkingDay = scheduledValue ? isCambodiaWorkingDay(scheduledValue, workingDays) : true;
 
   const statusOptions = isEdit && existing
     ? [existing.master_status, ...contentService.allowedTransitions(existing.master_status, role)]
