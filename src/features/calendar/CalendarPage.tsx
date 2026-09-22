@@ -18,6 +18,7 @@ import {
   isSameCambodiaMonth,
   toCambodiaDateKey,
 } from "@/lib/cambodia-locale";
+import { getCambodiaPublicHoliday } from "@/lib/cambodia-holidays";
 import { cn } from "@/lib/utils";
 import { contentService, platformService } from "@/services";
 import type { ContentItem, ContentPlatform } from "@/types";
@@ -124,6 +125,10 @@ export function CalendarPage() {
         onToday={() => setCurrentDate(getCambodiaTodayDate())}
       />
       <PlatformLegend />
+      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+        <span>ថ្ងៃឈប់សម្រាកជាតិ / Cambodian public holiday</span>
+      </div>
 
       {view === "agenda" ? (
         <div className="mt-4 space-y-3">
@@ -176,23 +181,34 @@ export function CalendarPage() {
               const key = toCalendarDateKey(day);
               const dayEntries = entriesByDate[key] ?? [];
               const inMonth = isSameCalendarMonth(day, currentDate);
+              const holiday = getCambodiaPublicHoliday(key);
 
               return (
                 <div
                   key={key}
                   className={cn(
                     "min-h-[100px] border-b border-r p-1.5 text-xs",
-                    !inMonth && "bg-muted/20 text-muted-foreground/50"
+                    !inMonth && "bg-muted/20 text-muted-foreground/50",
+                    holiday && inMonth && "bg-amber-50/60 dark:bg-amber-950/10"
                   )}
+                  title={holiday ? holiday.nameKhmer : undefined}
                 >
-                  <div
-                    className={cn(
-                      "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium",
-                      isToday(day) && "bg-primary text-primary-foreground"
-                    )}
-                  >
-                    {day.getDate()}
+                  <div className="mb-1 flex items-start justify-between gap-1">
+                    <div
+                      className={cn(
+                        "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium",
+                        isToday(day) && "bg-primary text-primary-foreground"
+                      )}
+                    >
+                      {day.getDate()}
+                    </div>
+                    {holiday && inMonth && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" />}
                   </div>
+                  {holiday && inMonth && (
+                    <div className="mb-1 truncate text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                      {holiday.nameKhmer}
+                    </div>
+                  )}
                   <div className="space-y-0.5">
                     {dayEntries.slice(0, 3).map((entry) => (
                       <Button
