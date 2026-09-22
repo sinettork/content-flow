@@ -19,6 +19,8 @@ export interface WorkspaceSettings {
   brand_notes: string;
   notification_preferences: Record<string, boolean>;
   automation_rules: AutomationRule[];
+  working_days: number[];
+  khmer_lunar_enabled: boolean;
 }
 
 const STORAGE_KEY = "contentflow.workspace-settings.v1";
@@ -35,6 +37,8 @@ function defaults(workspaceId: string, workspaceName = "ContentFlow"): Workspace
     brand_notes: "",
     notification_preferences: { approval: true, schedule: true, comments: true, overdue: true },
     automation_rules: [],
+    working_days: [1, 2, 3, 4, 5],
+    khmer_lunar_enabled: true,
   };
 }
 
