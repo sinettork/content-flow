@@ -33,6 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { isSupabaseBackend } from "@/lib/backend";
 import { CONTENT_TYPES, MASTER_STATUSES, PLATFORMS, PRIORITIES } from "@/lib/constants";
+import { CAMBODIA_WORKING_DAY_OPTIONS } from "@/lib/cambodia-locale";
 import { resetDatabase } from "@/lib/mock/db";
 import { cn } from "@/lib/utils";
 import { settingsService } from "@/services";
@@ -70,6 +71,8 @@ export function SettingsPage() {
   const [approvalRequired, setApprovalRequired] = useState(true);
   const [autoChecklist, setAutoChecklist] = useState(true);
   const [brandNotes, setBrandNotes] = useState("Use approved logo lockup, avoid low-contrast text, and keep CTA visible.");
+  const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [khmerLunarEnabled, setKhmerLunarEnabled] = useState(true);
   const [notifications, setNotifications] = useState<Record<string, boolean>>({
     approval: true,
     schedule: true,
@@ -90,6 +93,8 @@ export function SettingsPage() {
       setApprovalRequired(settings.approval_required);
       setAutoChecklist(settings.checklist_required);
       setBrandNotes(settings.brand_notes);
+      setWorkingDays(settings.working_days);
+      setKhmerLunarEnabled(settings.khmer_lunar_enabled);
       setNotifications(settings.notification_preferences);
       if (settings.automation_rules.length) setRules(settings.automation_rules);
     }).catch((error: Error) => toast("Could not load settings", { description: error.message, variant: "destructive" }));
@@ -110,6 +115,8 @@ export function SettingsPage() {
         brand_notes: brandNotes,
         notification_preferences: notifications,
         automation_rules: rules,
+        working_days: workingDays,
+        khmer_lunar_enabled: khmerLunarEnabled,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -218,6 +225,54 @@ export function SettingsPage() {
                     <option key={priority} value={priority}>{priority}</option>
                   ))}
                 </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                Cambodia calendar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div>
+                <p className="mb-2 text-sm font-medium">Working days</p>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Used for scheduling guidance. Public holidays remain separate national dates.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {CAMBODIA_WORKING_DAY_OPTIONS.map((day) => {
+                    const active = workingDays.includes(day.value);
+                    return (
+                      <Button
+                        key={day.value}
+                        type="button"
+                        variant={active ? "default" : "outline"}
+                        size="sm"
+                        onClick={() =>
+                          setWorkingDays((current) =>
+                            active
+                              ? current.filter((value) => value !== day.value)
+                              : [...current, day.value].sort((a, b) => a - b)
+                          )
+                        }
+                      >
+                        {day.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-4 rounded-xl border bg-muted/20 p-4">
+                <div>
+                  <p className="font-medium">Show Khmer lunar date</p>
+                  <p className="text-sm text-muted-foreground">
+                    Display Chhankitek lunar dates as a secondary calendar layer.
+                  </p>
+                </div>
+                <Switch checked={khmerLunarEnabled} onCheckedChange={setKhmerLunarEnabled} />
               </div>
             </CardContent>
           </Card>
