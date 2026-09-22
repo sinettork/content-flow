@@ -7,7 +7,16 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/dates";
+import {
+  CAMBODIA_GREGORIAN_LOCALE,
+  CAMBODIA_TIME_ZONE,
+  formatCambodiaBuddhistYear,
+  formatCambodiaMonth,
+  formatCambodiaTime,
+  getCambodiaTodayDate,
+  isSameCambodiaMonth,
+  toCambodiaDateKey,
+} from "@/lib/cambodia-locale";
 import { cn } from "@/lib/utils";
 import { contentService, platformService } from "@/services";
 import type { ContentItem, ContentPlatform } from "@/types";
@@ -17,7 +26,12 @@ interface ScheduledEntry {
   platforms: ContentPlatform[];
 }
 
-const MONTH_FORMAT = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
+const CAMBODIA_AGENDA_DATE_FORMAT = new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  timeZone: CAMBODIA_TIME_ZONE,
+});
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -29,23 +43,23 @@ function addMonths(date: Date, amount: number) {
   return next;
 }
 
-function toDateKey(value: string | Date) {
-  const date = value instanceof Date ? value : new Date(value);
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+function toCalendarDateKey(value: Date) {
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
 }
 
-function isSameMonth(a: Date, b: Date) {
+function isSameCalendarMonth(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
 
 function isToday(date: Date) {
-  return toDateKey(date) === toDateKey(new Date());
+  return toCalendarDateKey(date) === toCalendarDateKey(getCambodiaTodayDate());
 }
 
 function monthDays(month: Date) {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const start = new Date(first);
-  start.setDate(first.getDate() - first.getDay());
+  const mondayOffset = (first.getDay() + 6) % 7;
+  start.setDate(first.getDate() - mondayOffset);
 
   return Array.from({ length: 42 }, (_, index) => {
     const day = new Date(start);
@@ -56,7 +70,7 @@ function monthDays(month: Date) {
 
 export function CalendarPage() {
   const navigate = useNavigate();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(getCambodiaTodayDate());
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
   const [view, setView] = useState<"month" | "agenda">("month");
 
@@ -73,14 +87,29 @@ export function CalendarPage() {
 
   const entriesByDate = useMemo(() => {
     const map: Record<string, ScheduledEntry[]> = {};
-    for (const e of entries) {
-      const d = toDateKey(e.item.scheduled_at!);
-      (map[d] ??= []).push(e);
+    for (const entry of entries) {
+      const dateKey = toCambodiaDateKey(entry.item.scheduled_at);
+      if (!dateKey) continue;
+      (map[dateKey] ??= []).push(entry);
     }
     return map;
   }, [entries]);
 
-  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weekDays = useMemo(() => {
+    const base = new Date(2026, 8, 21);
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(base);
+      date.setDate(base.getDate() + index);
+      return new Intl.DateTimeFormat(CAMBODIA_GREGORIAN_LOCALE, {
+        weekday: "short",
+        timeZone: CAMBODIA_TIME_ZONE,
+      }).format(date);
+    });
+  }, []);
+
+  const hasScheduledContent = entries.some(
+    (entry) => entry.item.scheduled_at && isSameCambodiaMonth(entry.item.scheduled_at, currentDate)
+  );
 
   return (
     <>
@@ -95,97 +124,109 @@ export function CalendarPage() {
         }
       />
       <CalendarToolbar
-        title={MONTH_FORMAT.format(currentDate)}
+        title={formatCambodiaMonth(currentDate)}
+        secondaryTitle={formatCambodiaBuddhistYear(currentDate)}
         view={view}
         onViewChange={setView}
         onPrev={() => setCurrentDate(addMonths(currentDate, -1))}
         onNext={() => setCurrentDate(addMonths(currentDate, 1))}
-        onToday={() => setCurrentDate(new Date())}
+        onToday={() => setCurrentDate(getCambodiaTodayDate())}
       />
       <PlatformLegend />
 
       {view === "agenda" ? (
         <div className="mt-4 space-y-3">
           {Object.entries(entriesByDate)
-            .filter(([key]) => {
-              const date = new Date(`${key}T00:00:00`);
-              return isSameMonth(date, currentDate);
-            })
+            .filter(([key]) => isSameCalendarMonth(new Date(`${key}T00:00:00`), currentDate))
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([key, dayEntries]) => (
               <div key={key} className="rounded-lg border bg-card p-3">
-                <h3 className="mb-2 text-sm font-semibold">{new Intl.DateTimeFormat(undefined, { weekday: "long", month: "short", day: "numeric" }).format(new Date(`${key}T00:00:00`))}</h3>
+                <h3 className="mb-2 text-sm font-semibold">
+                  {CAMBODIA_AGENDA_DATE_FORMAT.format(new Date(`${key}T00:00:00`))}
+                </h3>
                 <div className="space-y-1">
                   {dayEntries.map((entry) => (
-                    <Button key={entry.item.id} variant="ghost" className="h-auto w-full justify-start gap-2 px-2 py-2 text-left" onClick={() => navigate(`/app/content/${entry.item.id}`)}>
-                      {entry.platforms[0] && <PlatformBadge platform={entry.platforms[0].platform_name} className="scale-75" />}
+                    <Button
+                      key={entry.item.id}
+                      variant="ghost"
+                      className="h-auto w-full justify-start gap-2 px-2 py-2 text-left"
+                      onClick={() => navigate(`/app/content/${entry.item.id}`)}
+                    >
+                      {entry.platforms[0] && (
+                        <PlatformBadge platform={entry.platforms[0].platform_name} className="scale-75" />
+                      )}
                       <span className="truncate font-medium">{entry.item.title}</span>
-                      <span className="ml-auto text-xs text-muted-foreground">{formatDate(entry.item.scheduled_at, "h:mm a")}</span>
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {formatCambodiaTime(entry.item.scheduled_at)}
+                      </span>
                     </Button>
                   ))}
                 </div>
               </div>
             ))}
-          {entries.filter((entry) => entry.item.scheduled_at && isSameMonth(new Date(entry.item.scheduled_at), currentDate)).length === 0 && (
-            <p className="rounded-lg border p-8 text-center text-sm text-muted-foreground">Nothing scheduled this month.</p>
+          {!hasScheduledContent && (
+            <p className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
+              Nothing scheduled this month.
+            </p>
           )}
         </div>
-      ) : <div className="mt-4 rounded-lg border">
-        {/* Header row */}
-        <div className="grid grid-cols-7 border-b bg-muted/30">
-          {weekDays.map((d) => (
-            <div key={d} className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">
-              {d}
-            </div>
-          ))}
-        </div>
+      ) : (
+        <div className="mt-4 rounded-lg border">
+          <div className="grid grid-cols-7 border-b bg-muted/30">
+            {weekDays.map((day) => (
+              <div key={day} className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">
+                {day}
+              </div>
+            ))}
+          </div>
 
-        {/* Day cells */}
-        <div className="grid grid-cols-7">
-          {days.map((day) => {
-            const key = toDateKey(day);
-            const dayEntries = entriesByDate[key] ?? [];
-            const inMonth = isSameMonth(day, currentDate);
-            return (
-              <div
-                key={key}
-                className={cn(
-                  "min-h-[100px] border-b border-r p-1.5 text-xs",
-                  !inMonth && "bg-muted/20 text-muted-foreground/50"
-                )}
-              >
+          <div className="grid grid-cols-7">
+            {days.map((day) => {
+              const key = toCalendarDateKey(day);
+              const dayEntries = entriesByDate[key] ?? [];
+              const inMonth = isSameCalendarMonth(day, currentDate);
+
+              return (
                 <div
+                  key={key}
                   className={cn(
-                    "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium",
-                    isToday(day) && "bg-primary text-primary-foreground"
+                    "min-h-[100px] border-b border-r p-1.5 text-xs",
+                    !inMonth && "bg-muted/20 text-muted-foreground/50"
                   )}
                 >
-                  {day.getDate()}
+                  <div
+                    className={cn(
+                      "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-medium",
+                      isToday(day) && "bg-primary text-primary-foreground"
+                    )}
+                  >
+                    {day.getDate()}
+                  </div>
+                  <div className="space-y-0.5">
+                    {dayEntries.slice(0, 3).map((entry) => (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        key={entry.item.id}
+                        className="h-auto w-full justify-start gap-1 truncate rounded px-1 py-0.5 text-left text-xs font-normal hover:bg-accent"
+                        onClick={() => navigate(`/app/content/${entry.item.id}`)}
+                      >
+                        {entry.platforms[0] && (
+                          <PlatformBadge platform={entry.platforms[0].platform_name} className="scale-75" />
+                        )}
+                        <span className="truncate">{entry.item.title}</span>
+                      </Button>
+                    ))}
+                    {dayEntries.length > 3 && (
+                      <div className="px-1 text-muted-foreground">+{dayEntries.length - 3} more</div>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-0.5">
-                  {dayEntries.slice(0, 3).map((e) => (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      key={e.item.id}
-                      className="h-auto w-full justify-start gap-1 truncate rounded px-1 py-0.5 text-left text-xs font-normal hover:bg-accent"
-                      onClick={() => navigate(`/app/content/${e.item.id}`)}
-                    >
-                      {e.platforms[0] && (
-                        <PlatformBadge platform={e.platforms[0].platform_name} className="scale-75" />
-                      )}
-                      <span className="truncate">{e.item.title}</span>
-                    </Button>
-                  ))}
-                  {dayEntries.length > 3 && (
-                    <div className="px-1 text-muted-foreground">+{dayEntries.length - 3} more</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>}
+      )}
     </>
   );
 }
