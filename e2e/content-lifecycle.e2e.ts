@@ -40,7 +40,7 @@ test("editor creates and configures content; manager reviews, approves, schedule
   await expect(page).toHaveURL(/\/app\/dashboard/);
 
   await page.getByRole("link", { name: "Content", exact: true }).click();
-  await page.getByRole("link", { name: "New content", exact: true }).click();
+  await page.getByRole("link", { name: "New content", exact: true }).first().click();
 
   const title = `E2E content lifecycle ${Date.now()}`;
   await page.getByLabel("Title *").fill(title);

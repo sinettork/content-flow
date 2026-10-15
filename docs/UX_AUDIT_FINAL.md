@@ -63,6 +63,7 @@ The UX should keep the user oriented, surface the next useful action, minimize h
 - [x] Expand Search into true global search across content, campaigns, people, assets, and commands. Results are workspace-scoped, keyboard accessible, and open matching records or filtered workspace pages.
 - [x] Add a mock-only Playwright workflow test covering editor create/configure/review, manager approval, scheduling, and the app's simulated published status; verify no provider API requests occur.
 - [x] Run visual QA at desktop (1440 px), tablet (820 px), and mobile (390 px). The pass found and fixed the saved-view dialog's mobile width overflow; layout and dialog bounds now pass at all three sizes.
+- [x] Honor the normal-case UI copy preference: remove forced uppercase styling from sidebar headings, table headers, history labels, metric labels, color values, and search result categories.
 - [ ] Revisit a dedicated platform editor when per-platform configuration grows beyond the current caption and hashtags fields.
 
 ## Completion

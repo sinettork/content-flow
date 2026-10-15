@@ -203,7 +203,7 @@ export function SearchCommand({ open, onClose }: SearchCommandProps) {
                     </span>
                   </span>
                   <span className="ml-3 flex shrink-0 items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{result.group}</span>
+                    <span className="text-[10px] text-muted-foreground">{result.group}</span>
                     {result.status && <ContentStatusBadge status={result.status} />}
                   </span>
                 </Button>

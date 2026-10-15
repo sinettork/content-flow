@@ -130,6 +130,7 @@ The database migration creates private Storage buckets, workspace policies, appr
 
 - Expanded the command palette into workspace-wide search across content, campaigns, people, assets, and navigation commands.
 - Replaced the saved-view browser prompt with a labeled, keyboard-friendly dialog and constrained shared dialogs to the viewport on small screens.
+- User-facing navigation and utility labels use normal case; the interface does not force labels into uppercase.
 
 ### Team accountability
 

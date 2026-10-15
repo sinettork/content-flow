@@ -42,7 +42,7 @@ export function ColorPicker({ value, onValueChange, disabled, className }: Color
           className={cn("w-full justify-start bg-background font-normal", className)}
         >
           <span className="h-4 w-4 rounded-full border" style={{ backgroundColor: value }} />
-          <span className="font-mono text-xs uppercase">{value}</span>
+          <span className="font-mono text-xs">{value}</span>
           <Palette className="ml-auto h-4 w-4 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
@@ -73,7 +73,7 @@ export function ColorPicker({ value, onValueChange, disabled, className }: Color
           value={value}
           onChange={(event) => onValueChange(normalizeHex(event.target.value))}
           placeholder="#6366f1"
-          className="font-mono text-xs uppercase"
+          className="font-mono text-xs"
         />
       </PopoverContent>
     </Popover>

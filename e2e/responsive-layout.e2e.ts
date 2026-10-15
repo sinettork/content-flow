@@ -23,6 +23,12 @@ for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await signInAsAdmin(page);
 
+    if (viewport.width >= 820) {
+      const sectionLabel = page.getByText("Content workspace", { exact: true });
+      await expect(sectionLabel).toBeVisible();
+      await expect(sectionLabel).toHaveCSS("text-transform", "none");
+    }
+
     const pageSize = await page.evaluate(() => ({
       viewportWidth: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,

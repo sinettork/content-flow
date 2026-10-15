@@ -125,7 +125,7 @@ export function DashboardLayout() {
                   className={cn(
                     collapsed
                       ? "mx-2 my-2 border-t border-sidebar-border/60"
-                      : "px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60",
+                      : "px-3 pb-1 pt-3 text-xs font-semibold text-muted-foreground/70",
                     !collapsed && index > 0 && "border-t border-sidebar-border/60 mt-2"
                   )}
                 >

@@ -22,8 +22,8 @@ import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import type { MasterStatus } from "@/lib/constants";
 import { formatDate, formatDateTime, fromNow } from "@/lib/dates";
 import { activityService, campaignService, contentService, platformService, profileService, workflowService } from "@/services";
-import { toast } from "@/stores/toast-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { toast } from "@/stores/toast-store";
 import type { ActivityLog, Campaign, ContentItem, ContentPlatform, ContentVersion, Profile } from "@/types";
 
 const STATUS_LABELS: Record<MasterStatus, string> = {
@@ -277,13 +277,13 @@ export function ContentDetailPage() {
             <summary className="cursor-pointer px-4 py-3 text-sm font-medium">History</summary>
             <div className="space-y-4 border-t p-4">
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Activity</p>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">Activity</p>
                 <ActivityTimeline logs={logs} profileMap={profileMap} />
               </div>
               {versions.length > 0 && <>
                 <Separator />
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Versions</p>
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground">Versions</p>
                   <div className="space-y-2">
                     {versions.slice(0, 10).map((version) => (
                       <div key={version.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-xs">
