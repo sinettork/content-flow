@@ -11,6 +11,7 @@ const GRAPH = "https://graph.facebook.com/v26.0";
 const META_PERMISSIONS = [
   "pages_show_list",
   "pages_read_engagement",
+  "read_insights",
   "pages_manage_metadata",
   "pages_messaging",
   "pages_manage_posts",
@@ -75,6 +76,22 @@ Deno.serve(async (req) => {
     return new Response("Invalid or expired OAuth state", { status: 400 });
   }
 
+  const { data: currentProfile, error: currentProfileError } = await db
+    .from("profiles")
+    .select("workspace_id,role")
+    .eq("id", oauthState.user_id)
+    .maybeSingle();
+  if (
+    currentProfileError ||
+    currentProfile?.workspace_id !== oauthState.workspace_id ||
+    (currentProfile?.role !== "admin" && currentProfile?.role !== "manager")
+  ) {
+    return Response.redirect(
+      redirectUrl(oauthState.return_url, false) ?? new URL("/", req.url).toString(),
+      302,
+    );
+  }
+
   if (oauthError || !code) {
     return Response.redirect(
       redirectUrl(oauthState.return_url, false) ?? new URL("/", req.url).toString(),
@@ -109,16 +126,22 @@ Deno.serve(async (req) => {
       access_token: longToken.access_token,
       fields: "id,name,access_token,instagram_business_account",
     });
+    if (!Array.isArray(pages.data) || pages.data.length === 0) {
+      throw new Error("No Facebook Pages were granted to this Meta connection.");
+    }
 
     for (const page of pages.data ?? []) {
       const pageId = String(page.id);
       const pageName = String(page.name ?? "Facebook Page");
+      if (!pageId || !page.access_token) throw new Error("Meta returned an incomplete Page token response.");
 
       const stored = await db.rpc("store_social_secret", {
         p_name: `contentflow_meta_${oauthState.workspace_id}_${pageId}_${Date.now()}`,
         p_value: page.access_token,
       });
-      if (stored.error) throw stored.error;
+      if (stored.error || typeof stored.data !== "string" || !stored.data) {
+        throw stored.error ?? new Error("Meta Page token could not be stored securely.");
+      }
 
       const existingFacebook = await db
         .from("social_connections")
@@ -127,6 +150,7 @@ Deno.serve(async (req) => {
         .eq("provider", "facebook")
         .eq("external_account_id", pageId)
         .maybeSingle();
+      if (existingFacebook.error) throw existingFacebook.error;
 
       const facebookMetadata = {
         platform: "meta",
@@ -135,19 +159,26 @@ Deno.serve(async (req) => {
       };
 
       if (existingFacebook.data) {
-        await db
+        const { data: updatedFacebook, error: updateFacebookError } = await db
           .from("social_connections")
           .update({
             name: pageName,
             credentials_ref: stored.data,
             status: "active",
             metadata: facebookMetadata,
+            last_insights_sync_started_at: null,
             updated_at: new Date().toISOString(),
             created_by: oauthState.user_id,
           })
-          .eq("id", existingFacebook.data.id);
+          .eq("id", existingFacebook.data.id)
+          .eq("workspace_id", oauthState.workspace_id)
+          .select("id")
+          .maybeSingle();
+        if (updateFacebookError || !updatedFacebook) {
+          throw updateFacebookError ?? new Error("Facebook Page connection could not be updated.");
+        }
       } else {
-        await db.from("social_connections").insert({
+        const { data: createdFacebook, error: insertFacebookError } = await db.from("social_connections").insert({
           workspace_id: oauthState.workspace_id,
           provider: "facebook",
           account_type: "page",
@@ -157,7 +188,10 @@ Deno.serve(async (req) => {
           status: "active",
           metadata: facebookMetadata,
           created_by: oauthState.user_id,
-        });
+        }).select("id").maybeSingle();
+        if (insertFacebookError || !createdFacebook) {
+          throw insertFacebookError ?? new Error("Facebook Page connection could not be created.");
+        }
       }
 
       try {

@@ -8,7 +8,8 @@ Deno.serve(async req=>{
  const token=(req.headers.get("authorization")??"").replace(/^Bearer\s+/,"");
  if(!token)return Response.json({error:"Unauthorized"},{status:401});
  const {data:u,error:ue}=await db.auth.getUser(token); if(ue||!u.user)return Response.json({error:"Unauthorized"},{status:401});
- const {data:p,error:pe}=await db.from("profiles").select("workspace_id").eq("id",u.user.id).maybeSingle(); if(pe||!p)return Response.json({error:"Workspace not found"},{status:403});
+ const {data:p,error:pe}=await db.from("profiles").select("workspace_id,role").eq("id",u.user.id).maybeSingle(); if(pe||!p?.workspace_id)return Response.json({error:"Workspace not found"},{status:403});
+ if(p.role!=="admin"&&p.role!=="manager")return Response.json({error:"Only workspace admins and managers can connect Meta."},{status:403});
  const appId=Deno.env.get("META_APP_ID"); const redirect=Deno.env.get("META_REDIRECT_URI");
  if(!appId||!redirect)return Response.json({error:"META_APP_ID and META_REDIRECT_URI are not configured"},{status:503});
  const body=await req.json().catch(()=>({})); const returnUrl=typeof body?.return_url==="string"?body.return_url:"";
@@ -17,7 +18,7 @@ Deno.serve(async req=>{
  const state=b64url(crypto.getRandomValues(new Uint8Array(32))); const hash=await sha(state);
  const {error:stateError}=await db.from("social_oauth_states").insert({workspace_id:p.workspace_id,user_id:u.user.id,provider:"facebook",state_hash:hash,expires_at:new Date(Date.now()+10*60*1000).toISOString(),return_url:parsedReturn.toString()});
  if(stateError){console.error("OAuth state creation failed",stateError);return Response.json({error:"Unable to start OAuth flow"},{status:500});}
- const perms=["pages_show_list","pages_read_engagement","pages_manage_metadata","pages_messaging","pages_manage_posts","instagram_basic","instagram_content_publish","instagram_manage_comments","instagram_manage_messages"].join(",");
+ const perms=["pages_show_list","pages_read_engagement","read_insights","pages_manage_metadata","pages_messaging","pages_manage_posts","instagram_basic","instagram_content_publish","instagram_manage_comments","instagram_manage_messages"].join(",");
  const url=new URL("https://www.facebook.com/v26.0/dialog/oauth"); url.searchParams.set("client_id",appId);url.searchParams.set("redirect_uri",redirect);url.searchParams.set("state",state);url.searchParams.set("scope",perms);
  return Response.json({authorization_url:url.toString()});
 });

@@ -17,6 +17,8 @@ import { buildDailyDigest, type DashboardMetrics, type DailyDigest, type Operati
 import { useAuthStore } from "@/stores/auth-store";
 import type { ContentItem, ContentPlatform } from "@/types";
 
+import { FacebookInsightsPanel } from "./FacebookInsightsPanel";
+
 type Tab = "scheduled" | "posted" | "overdue";
 
 export function ReportsPage() {
@@ -138,6 +140,8 @@ export function ReportsPage() {
   return (
     <>
       <PageHeader title="Reports" description="Content delivery insights." />
+
+      <FacebookInsightsPanel />
 
       {metrics && (
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
