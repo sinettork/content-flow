@@ -114,11 +114,82 @@ export interface AutomationDryRun {
   checks: Array<{ label: string; passed: boolean; detail: string }>;
 }
 
+const EXECUTABLE_AUTOMATION_ACTIONS = new Set(["reply_comment", "send_message", "notify_team"]);
+const SUPPORTED_CONDITION_TYPES = new Set(["contains"]);
+
+function actionType(action: unknown): string {
+  if (!action || typeof action !== "object" || Array.isArray(action)) return "";
+  const record = action as Record<string, unknown>;
+  return typeof record.type === "string" ? record.type : typeof record.action === "string" ? record.action : "";
+}
+
+function validCondition(condition: unknown): boolean {
+  if (!condition || typeof condition !== "object" || Array.isArray(condition)) return false;
+  const record = condition as Record<string, unknown>;
+  return SUPPORTED_CONDITION_TYPES.has(String(record.type ?? ""))
+    && typeof record.value === "string"
+    && record.value.trim().length > 0;
+}
+
 export function dryRunRule(rule: Pick<AutomationRule, "trigger_type" | "actions" | "conditions">): AutomationDryRun {
+  const actions = rule.actions.map((action) => ({
+    type: actionType(action),
+    message: action && typeof action === "object" && !Array.isArray(action)
+      ? (action as Record<string, unknown>).message
+      : undefined,
+  }));
+  const unsupported = actions.filter((action) => !EXECUTABLE_AUTOMATION_ACTIONS.has(action.type));
+  const missingMessage = actions.filter(
+    (action) => ["reply_comment", "send_message"].includes(action.type)
+      && (typeof action.message !== "string" || !action.message.trim()),
+  );
+  const incompatibleActions = actions.filter(
+    (action) => (action.type === "reply_comment" && rule.trigger_type !== "incoming_comment")
+      || (action.type === "send_message" && rule.trigger_type !== "incoming_message"),
+  );
+  const conditionsBounded = rule.conditions.length <= 5;
+  const invalidConditions = rule.conditions.filter((condition) => !validCondition(condition));
   const checks = [
-    { label: "Trigger configured", passed: Boolean(rule.trigger_type), detail: rule.trigger_type ? `Runs on ${rule.trigger_type.replace(/_/g, " ")}.` : "Select a trigger." },
-    { label: "Action configured", passed: rule.actions.length > 0, detail: rule.actions.length ? `${rule.actions.length} action(s) will run.` : "Add at least one action." },
-    { label: "Conditions bounded", passed: rule.conditions.length <= 5, detail: rule.conditions.length <= 5 ? `${rule.conditions.length} condition(s) checked.` : "Limit rules to five conditions for predictable execution." },
+    {
+      label: "Trigger configured",
+      passed: Boolean(rule.trigger_type),
+      detail: rule.trigger_type ? `Runs on ${rule.trigger_type.replace(/_/g, " ")}.` : "Select a trigger.",
+    },
+    {
+      label: "Action configured",
+      passed: actions.length > 0,
+      detail: actions.length ? `${actions.length} action(s) configured.` : "Add at least one action.",
+    },
+    {
+      label: "Actions supported",
+      passed: unsupported.length === 0,
+      detail: unsupported.length === 0
+        ? "Every action has an execution handler."
+        : `No execution handler is configured for: ${[...new Set(unsupported.map((action) => action.type || "unknown action"))].join(", ")}.`,
+    },
+    {
+      label: "Required action fields",
+      passed: missingMessage.length === 0,
+      detail: missingMessage.length === 0
+        ? "Required action messages are present."
+        : "Reply and private-message actions need a non-empty message.",
+    },
+    {
+      label: "Trigger matches action",
+      passed: incompatibleActions.length === 0,
+      detail: incompatibleActions.length === 0
+        ? "Each action matches the incoming event type."
+        : "Reply to comment requires a New comment trigger; Send private message requires a New message trigger.",
+    },
+    {
+      label: "Conditions supported",
+      passed: invalidConditions.length === 0 && conditionsBounded,
+      detail: !conditionsBounded
+        ? "Limit rules to five conditions."
+        : invalidConditions.length === 0
+          ? "All conditions use the supported contains operator and a non-empty value."
+          : "Only contains conditions with a non-empty value are supported.",
+    },
   ];
   return { checks, safe: checks.every((check) => check.passed) };
 }
