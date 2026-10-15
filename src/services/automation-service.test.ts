@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { connectionHealth, publishingReadiness, type SocialConnection } from "./automation-service";
+import { connectionHealth, dryRunRule, publishingReadiness, type SocialConnection } from "./automation-service";
 
 const connection = (patch: Partial<SocialConnection> = {}): SocialConnection => ({
   id: "c1", workspace_id: "w1", provider: "facebook", account_type: "page",
@@ -21,5 +21,76 @@ describe("social publishing readiness", () => {
     expect(result.canPublish).toBe(false);
     expect(result.connection).toBe("connected");
     expect(result.reason).toContain("publishing worker");
+  });
+});
+
+
+describe("automation dry-run readiness", () => {
+  it("allows an executable team notification without an optional message", () => {
+    const result = dryRunRule({
+      trigger_type: "incoming_comment",
+      conditions: [],
+      actions: [{ type: "notify_team" }],
+    });
+
+    expect(result.safe).toBe(true);
+    expect(result.checks.every((check) => check.passed)).toBe(true);
+  });
+
+  it("blocks actions that do not have an execution handler", () => {
+    const result = dryRunRule({
+      trigger_type: "incoming_comment",
+      conditions: [],
+      actions: [{ type: "share_content", message: "Share this post" }],
+    });
+
+    expect(result.safe).toBe(false);
+    expect(result.checks.find((check) => check.label === "Actions supported")?.detail)
+      .toContain("share_content");
+  });
+
+  it.each(["reply_comment", "send_message"])("requires a message for %s", (type) => {
+    const result = dryRunRule({
+      trigger_type: "incoming_comment",
+      conditions: [],
+      actions: [{ type, message: " " }],
+    });
+
+    expect(result.safe).toBe(false);
+    expect(result.checks.find((check) => check.label === "Required action fields")?.passed).toBe(false);
+  });
+
+  it("rejects actions that do not match the trigger event", () => {
+    const result = dryRunRule({
+      trigger_type: "incoming_comment",
+      conditions: [],
+      actions: [{ type: "send_message", message: "Thanks for reaching out." }],
+    });
+
+    expect(result.safe).toBe(false);
+    expect(result.checks.find((check) => check.label === "Trigger matches action")?.passed).toBe(false);
+  });
+
+  it("rejects unsupported or empty conditions instead of treating them as safe", () => {
+    const result = dryRunRule({
+      trigger_type: "incoming_comment",
+      conditions: [{ type: "matches_regex", value: "price" }, { type: "contains", value: " " }],
+      actions: [{ type: "notify_team" }],
+    });
+
+    expect(result.safe).toBe(false);
+    expect(result.checks.find((check) => check.label === "Conditions supported")?.passed).toBe(false);
+  });
+
+  it("enforces the maximum of five conditions", () => {
+    const result = dryRunRule({
+      trigger_type: "incoming_comment",
+      conditions: Array.from({ length: 6 }, () => ({ type: "contains", value: "price" })),
+      actions: [{ type: "notify_team" }],
+    });
+
+    expect(result.safe).toBe(false);
+    expect(result.checks.find((check) => check.label === "Conditions supported")?.detail)
+      .toContain("five conditions");
   });
 });
