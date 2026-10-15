@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { safeAppReturnUrl } from "../_shared/safe-app-return-url.ts";
 
 const db = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -37,10 +38,8 @@ async function graph(path: string, params: Record<string, string>) {
 }
 
 function redirectUrl(base: string | undefined, ok: boolean) {
-  if (!base) return null;
-  let url: URL;
-  try { url = new URL(base); } catch { return null; }
-  if (url.protocol !== "https:" && !(url.protocol === "http:" && url.hostname === "localhost")) return null;
+  const url = safeAppReturnUrl(base, Deno.env.get("APP_URL"));
+  if (!url) return null;
   url.searchParams.set("facebook", ok ? "connected" : "error");
   return url.toString();
 }
