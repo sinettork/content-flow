@@ -101,8 +101,7 @@ export function DashboardLayout() {
     .split(" ")
     .map((w) => w[0])
     .join("")
-    .slice(0, 2)
-    .toUpperCase();
+    .slice(0, 2);
 
   const themeIcons = { light: Sun, dark: Moon, system: Monitor };
   const nextTheme: Record<string, "light" | "dark" | "system"> = {
