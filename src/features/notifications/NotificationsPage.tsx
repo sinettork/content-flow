@@ -38,6 +38,10 @@ export function NotificationsPage() {
       navigate(`/app/content/${notification.entity_id}`);
       return;
     }
+    if (notification.entity_type === "automation_run") {
+      navigate("/app/automation");
+      return;
+    }
     await load();
   };
 
