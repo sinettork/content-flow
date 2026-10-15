@@ -24,7 +24,7 @@ export function MetricCard({ label, value, icon, trend, className }: MetricCardP
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+            <p className="text-xs font-semibold text-muted-foreground">{label}</p>
             <p className="animate-count-up text-3xl font-bold tracking-tight tabular-nums">{value}</p>
             {trend && <p className="text-[13px] text-muted-foreground">{trend}</p>}
           </div>

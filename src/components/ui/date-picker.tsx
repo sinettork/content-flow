@@ -110,13 +110,13 @@ function CalendarPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonth(addMonths(month, -1))}>
+        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="text-sm font-semibold">
           {CAMBODIA_MONTH_FORMAT.format(month)}
         </div>
-        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMonth(addMonths(month, 1))}>
+        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -137,6 +137,8 @@ function CalendarPanel({
               key={day.toISOString()}
               variant={selectedDay ? "default" : "ghost"}
               size="icon"
+              aria-label={day.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+              aria-pressed={selectedDay}
               className={cn(
                 "h-8 w-8 text-xs font-normal",
                 !isSameMonth(day, month) && "text-muted-foreground/45",

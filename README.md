@@ -10,6 +10,7 @@ Content operations platform for teams to plan, review, schedule, and track multi
 - Content, campaigns, Kanban board, calendar, assets, comments, team roles, notifications, reports, settings, approvals, version history, and publishing job monitoring
 - Workspace onboarding, My Work queues, calendar agenda view, board filters, approval triage, publishing retry, readiness checks, team workload, campaign risk, platform validation, and automation dry-run safety checks
 - Facebook/TikTok publishing readiness, bulk content actions, saved views, operational analytics, daily digest previews, and session recovery hardening
+- Workspace-wide search across content, campaigns, people, assets, and commands; mock-only lifecycle and responsive browser tests
 - Private signed asset URLs, durable publishing queue records, and secure server-side member invitations
 - CI checks for lint, tests, type safety, and production build
 
@@ -38,6 +39,10 @@ publishing jobs, social connection examples, and automation rules. Run
 local/demo environments only and must not be applied to production data.
 
 Mock data is stored in browser `localStorage`; Settings includes a mock-only reset control.
+
+## End-to-end demo workflow
+
+Run `npm run test:e2e` to exercise content creation, Facebook copy configuration, review, manager approval, scheduling, and the final mock “Mark as published” status. It also checks the Content workspace and saved-view dialog at desktop, tablet, and mobile widths. The tests start a dedicated Vite server with `VITE_DATA_BACKEND=mock` and clear browser storage; they do not use Supabase credentials or call a social provider. The final action changes only local demo data and does not publish a real post. If Playwright's bundled browser is not installed, run `npx playwright install chromium`; on Linux, use `npx playwright install --with-deps chromium` when system browser libraries are missing. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to use a locally installed Chromium binary.
 
 ## Supabase production setup
 
@@ -84,6 +89,7 @@ The database migration creates private Storage buckets, workspace policies, appr
 | `npm run lint` | Run ESLint |
 | `npm run typecheck` | Check TypeScript |
 | `npm test` | Run Vitest |
+| `npm run test:e2e` | Run mock-only browser workflow and responsive layout tests |
 | `npm run build` | Typecheck and create a production bundle |
 
 ## Main routes
@@ -119,6 +125,12 @@ The database migration creates private Storage buckets, workspace policies, appr
 - Added duplicate-as-draft for faster content creation.
 - Duplicated platform captions and hashtags while resetting publishing state.
 - Added live readiness checks for title, brief, campaign, owner, platforms, and platform checklists.
+
+### Search and saved views
+
+- Expanded the command palette into workspace-wide search across content, campaigns, people, assets, and navigation commands.
+- Replaced the saved-view browser prompt with a labeled, keyboard-friendly dialog and constrained shared dialogs to the viewport on small screens.
+- User-facing navigation and utility labels use normal case; the interface does not force labels into uppercase.
 
 ### Team accountability
 
