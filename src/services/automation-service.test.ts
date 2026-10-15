@@ -60,6 +60,17 @@ describe("automation dry-run readiness", () => {
     expect(result.checks.find((check) => check.label === "Required action fields")?.passed).toBe(false);
   });
 
+  it("rejects actions that do not match the trigger event", () => {
+    const result = dryRunRule({
+      trigger_type: "incoming_comment",
+      conditions: [],
+      actions: [{ type: "send_message", message: "Thanks for reaching out." }],
+    });
+
+    expect(result.safe).toBe(false);
+    expect(result.checks.find((check) => check.label === "Trigger matches action")?.passed).toBe(false);
+  });
+
   it("rejects unsupported or empty conditions instead of treating them as safe", () => {
     const result = dryRunRule({
       trigger_type: "incoming_comment",
