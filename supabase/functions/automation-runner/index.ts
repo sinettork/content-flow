@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildAutomationNotifications } from "../_shared/automation-notifications.ts";
 const url=Deno.env.get("SUPABASE_URL")!, key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
 type Run={id:string;workspace_id:string;rule_id:string;event_id:string;attempt_count:number;idempotency_key:string;input:Record<string,unknown>|null};
@@ -25,7 +26,21 @@ async function processRun(run:Run){
  const {data:rule,error:re}=await db.from("automation_rules").select("id,name,enabled,trigger_type,trigger_config,conditions,actions").eq("id",run.rule_id).maybeSingle();if(re)throw re;if(!rule)return finish(run,"skipped",{reason:"rule_not_found"});if(!rule.enabled)return finish(run,"skipped",{reason:"rule_disabled"});
  const {data:event,error:ee}=await db.from("automation_events").select("id,event_type,payload,connection_id,external_event_id").eq("id",run.event_id).maybeSingle();if(ee)throw ee;if(!event)return finish(run,"skipped",{reason:"event_not_found"});
  const actions=Array.isArray(rule.actions)?rule.actions:[];if(!actions.length)throw new Error("Automation rule has no actions");
- const results=[];for(const raw of actions as Record<string,unknown>[]){const type=String(raw?.type??raw?.action??"");if(type==="notify_team"){results.push({type,status:"accepted"});continue;}if(["reply_comment","send_message","share_content"].includes(type)){if(!event.connection_id)throw new Error("Automation event has no social connection");results.push({type,status:"sent",response:await facebookAction(event.connection_id,event,raw)});continue;}throw new Error(`Unsupported automation action: ${type}`);}
+ const results=[];for(const raw of actions as Record<string,unknown>[]){const type=String(raw?.type??raw?.action??"");if(type==="notify_team"){
+ const {data:members,error:memberError}=await db.from("profiles").select("id").eq("workspace_id",run.workspace_id);
+ if(memberError)throw memberError;
+ const rows=buildAutomationNotifications({
+  workspaceId:run.workspace_id,
+  runId:run.id,
+  ruleName:rule.name,
+  message:typeof raw.message==="string"?raw.message:"",
+  memberIds:(members??[]).map((member:{id:string})=>member.id)
+ });
+ const {error:notificationError}=await db.from("notifications").upsert(rows,{onConflict:"automation_run_id,user_id",ignoreDuplicates:true});
+ if(notificationError)throw notificationError;
+ results.push({type,status:"sent",recipient_count:rows.length});
+ continue;
+}if(["reply_comment","send_message","share_content"].includes(type)){if(!event.connection_id)throw new Error("Automation event has no social connection");results.push({type,status:"sent",response:await facebookAction(event.connection_id,event,raw)});continue;}throw new Error(`Unsupported automation action: ${type}`);}
  await log(run,"info","Executing automation actions",{rule_id:rule.id,event_type:event.event_type});await finish(run,"succeeded",{run_id:run.id,event_id:event.id,actions:results});
 }
 async function worker(limit:number){

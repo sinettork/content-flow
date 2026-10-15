@@ -150,6 +150,7 @@ export interface Notification {
   is_read: boolean;
   entity_type: string | null;
   entity_id: string | null;
+  automation_run_id?: string | null;
   created_at: string;
 }
 
