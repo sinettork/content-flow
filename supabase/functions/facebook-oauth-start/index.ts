@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { safeAppReturnUrl } from "../_shared/safe-app-return-url.ts";
 const db=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,{auth:{persistSession:false}});
 async function sha(v:string){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
 function b64url(b:Uint8Array){let s="";for(const x of b)s+=String.fromCharCode(x);return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
@@ -12,8 +13,10 @@ Deno.serve(async req=>{
  const appId=Deno.env.get("META_APP_ID"); const redirect=Deno.env.get("META_REDIRECT_URI");
  if(!appId||!redirect)return Response.json({error:"META_APP_ID and META_REDIRECT_URI are not configured"},{status:503});
  const body=await req.json().catch(()=>({})); const returnUrl=typeof body?.return_url==="string"?body.return_url:"";
- let parsedReturn:URL;try{parsedReturn=new URL(returnUrl);}catch{return Response.json({error:"Invalid return_url"},{status:400});}
- if(parsedReturn.protocol!=="https:"&&!(parsedReturn.protocol==="http:"&&parsedReturn.hostname==="localhost"))return Response.json({error:"Invalid return_url"},{status:400});
+ const appUrl = Deno.env.get("APP_URL");
+ if (!appUrl) return Response.json({ error: "APP_URL is not configured" }, { status: 503 });
+ const parsedReturn = safeAppReturnUrl(returnUrl, appUrl);
+ if (!parsedReturn) return Response.json({ error: "return_url must use the configured application origin" }, { status: 400 });
  const state=b64url(crypto.getRandomValues(new Uint8Array(32))); const hash=await sha(state);
  const {error:stateError}=await db.from("social_oauth_states").insert({workspace_id:p.workspace_id,user_id:u.user.id,provider:"facebook",state_hash:hash,expires_at:new Date(Date.now()+10*60*1000).toISOString(),return_url:parsedReturn.toString()});
  if(stateError){console.error("OAuth state creation failed",stateError);return Response.json({error:"Unable to start OAuth flow"},{status:500});}
