@@ -143,6 +143,10 @@ export function dryRunRule(rule: Pick<AutomationRule, "trigger_type" | "actions"
     (action) => ["reply_comment", "send_message"].includes(action.type)
       && (typeof action.message !== "string" || !action.message.trim()),
   );
+  const incompatibleActions = actions.filter(
+    (action) => (action.type === "reply_comment" && rule.trigger_type !== "incoming_comment")
+      || (action.type === "send_message" && rule.trigger_type !== "incoming_message"),
+  );
   const conditionsBounded = rule.conditions.length <= 5;
   const invalidConditions = rule.conditions.filter((condition) => !validCondition(condition));
   const checks = [
@@ -169,6 +173,13 @@ export function dryRunRule(rule: Pick<AutomationRule, "trigger_type" | "actions"
       detail: missingMessage.length === 0
         ? "Required action messages are present."
         : "Reply and private-message actions need a non-empty message.",
+    },
+    {
+      label: "Trigger matches action",
+      passed: incompatibleActions.length === 0,
+      detail: incompatibleActions.length === 0
+        ? "Each action matches the incoming event type."
+        : "Reply to comment requires a New comment trigger; Send private message requires a New message trigger.",
     },
     {
       label: "Conditions supported",
