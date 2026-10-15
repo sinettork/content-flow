@@ -10,6 +10,7 @@ Content operations platform for teams to plan, review, schedule, and track multi
 - Content, campaigns, Kanban board, calendar, assets, comments, team roles, notifications, reports, settings, approvals, version history, and publishing job monitoring
 - Workspace onboarding, My Work queues, calendar agenda view, board filters, approval triage, publishing retry, readiness checks, team workload, campaign risk, platform validation, and automation dry-run safety checks
 - Facebook/TikTok publishing readiness, bulk content actions, saved views, operational analytics, daily digest previews, and session recovery hardening
+- Facebook Page Insights with daily unique viewers, follows/unfollows, follower totals, and workspace-scoped historical snapshots
 - Private signed asset URLs, durable publishing queue records, and secure server-side member invitations
 - CI checks for lint, tests, type safety, and production build
 
@@ -45,11 +46,15 @@ Mock data is stored in browser `localStorage`; Settings includes a mock-only res
 2. Run `supabase start`, then `supabase db reset` to validate both migrations locally.
 3. Link the remote project with `supabase link --project-ref <project-ref>`.
 4. Apply migrations with `supabase db push`.
-5. Set `APP_URL` to the production origin and deploy the invitation function:
+5. Set `APP_URL` to the production origin, configure Meta OAuth secrets, and deploy the functions:
 
 ```powershell
 supabase secrets set APP_URL=https://your-app.example
+supabase secrets set META_APP_ID=YOUR_META_APP_ID META_APP_SECRET=YOUR_META_APP_SECRET META_REDIRECT_URI=https://YOUR_PROJECT.supabase.co/functions/v1/facebook-oauth-callback
 supabase functions deploy invite-member
+supabase functions deploy facebook-oauth-start
+supabase functions deploy facebook-oauth-callback
+supabase functions deploy facebook-insights-sync
 ```
 
 6. Configure the frontend environment:
@@ -61,6 +66,12 @@ VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_BROWSER_SAFE_PUBLISHABLE_KEY
 ```
 
 Never put a secret/service-role key in a `VITE_*` variable. Authenticated users without a workspace can create their first workspace from `/app/onboarding`; later members can be invited from Team.
+
+### Facebook Page Insights
+
+The Reports page can sync daily metrics for a connected Facebook Page. The server-only `facebook-insights-sync` Edge Function reads the Page token from Supabase Vault and stores daily snapshots in `facebook_page_insights_daily`; authenticated clients have workspace-scoped read access and cannot write snapshots directly. Sync is user-initiated from Reports (30- or 90-closed-day range), is limited to workspace admins/managers, and has a five-minute per-Page cooldown; this implementation does not claim an automatic daily schedule. The dashboard shows per-metric day coverage and only calculates net follows when both daily series cover the full selected period.
+
+Meta OAuth must include `read_insights` and `pages_read_engagement`, and the selected Page must grant the connected person the `ANALYZE` task. Reconnect Pages that were authorized before `read_insights` was added. Meta documents that Page Insights are available only for Pages with at least 100 likes and that a single `since`/`until` request is limited to 90 days. Meta retired legacy Page reach metrics in 2026; the dashboard uses `page_total_media_view_unique` (unique media viewers) as the current replacement, not as a strictly comparable continuation of historical reach. Unique daily follows and unfollows are estimates.
 
 ### monday.com integration foundation
 

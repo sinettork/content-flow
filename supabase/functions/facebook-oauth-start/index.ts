@@ -17,7 +17,7 @@ Deno.serve(async req=>{
  const state=b64url(crypto.getRandomValues(new Uint8Array(32))); const hash=await sha(state);
  const {error:stateError}=await db.from("social_oauth_states").insert({workspace_id:p.workspace_id,user_id:u.user.id,provider:"facebook",state_hash:hash,expires_at:new Date(Date.now()+10*60*1000).toISOString(),return_url:parsedReturn.toString()});
  if(stateError){console.error("OAuth state creation failed",stateError);return Response.json({error:"Unable to start OAuth flow"},{status:500});}
- const perms=["pages_show_list","pages_read_engagement","pages_manage_metadata","pages_messaging","pages_manage_posts","instagram_basic","instagram_content_publish","instagram_manage_comments","instagram_manage_messages"].join(",");
+ const perms=["pages_show_list","pages_read_engagement","read_insights","pages_manage_metadata","pages_messaging","pages_manage_posts","instagram_basic","instagram_content_publish","instagram_manage_comments","instagram_manage_messages"].join(",");
  const url=new URL("https://www.facebook.com/v26.0/dialog/oauth"); url.searchParams.set("client_id",appId);url.searchParams.set("redirect_uri",redirect);url.searchParams.set("state",state);url.searchParams.set("scope",perms);
  return Response.json({authorization_url:url.toString()});
 });

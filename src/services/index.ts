@@ -10,6 +10,7 @@ export { assetService } from "./asset-service";
 export { notificationService } from "./notification-service";
 export { profileService } from "./profile-service";
 export { reportService } from "./report-service";
+export { facebookInsightsService } from "./facebook-insights-service";
 export { settingsService } from "./settings-service";
 export type { WorkspaceSettings, AutomationRule } from "./settings-service";
 export { workflowService } from "./workflow-service";

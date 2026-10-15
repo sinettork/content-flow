@@ -11,6 +11,7 @@ const GRAPH = "https://graph.facebook.com/v26.0";
 const META_PERMISSIONS = [
   "pages_show_list",
   "pages_read_engagement",
+  "read_insights",
   "pages_manage_metadata",
   "pages_messaging",
   "pages_manage_posts",
