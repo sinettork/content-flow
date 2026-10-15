@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { safeAppReturnUrl } from "../_shared/safe-app-return-url.ts";
 import { MONDAY_API_VERSION } from "../_shared/monday.ts";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
@@ -8,13 +9,10 @@ const sha = async (value: string) => {
   return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 };
 const safeRedirect = (value: string | null, ok: boolean) => {
-  if (!value) return null;
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "https:" && !(url.protocol === "http:" && url.hostname === "localhost")) return null;
-    url.searchParams.set("monday", ok ? "connected" : "error");
-    return url.toString();
-  } catch { return null; }
+  const url = safeAppReturnUrl(value, Deno.env.get("APP_URL"));
+  if (!url) return null;
+  url.searchParams.set("monday", ok ? "connected" : "error");
+  return url.toString();
 };
 
 Deno.serve(async (request) => {
