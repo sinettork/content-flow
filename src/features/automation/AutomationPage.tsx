@@ -34,8 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { automationService, connectionHealth, publishingReadiness, type AutomationRule, type AutomationRun, type SocialConnection, type AutomationTrigger } from "@/services/automation-service";
-import { dryRunRule } from "@/services/automation-service";
+import { automationService, connectionHealth, dryRunRule, publishingReadiness, type AutomationRule, type AutomationRun, type SocialConnection, type AutomationTrigger } from "@/services/automation-service";
 import { useAuthStore } from "@/stores/auth-store";
 import { toast } from "@/stores/toast-store";
 
@@ -47,11 +46,11 @@ const TRIGGERS: Array<{ value: AutomationTrigger; label: string }> = [
   { value: "manual", label: "Manual test" },
 ];
 
-const ACTIONS = [
+const ACTIONS: Array<{ value: string; label: string; disabled?: boolean }> = [
   { value: "reply_comment", label: "Reply to comment" },
   { value: "send_message", label: "Send private message" },
   { value: "notify_team", label: "Notify team" },
-  { value: "share_content", label: "Share content" },
+  { value: "share_content", label: "Share content (not configured)", disabled: true },
 ];
 
 const providerIcons = {
@@ -321,8 +320,25 @@ export function AutomationPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5"><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Price inquiry reply" /></div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5"><Label>Trigger</Label><Select value={form.trigger} onChange={(e) => setForm({ ...form, trigger: e.target.value as AutomationTrigger })}>{TRIGGERS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</Select></div>
-              <div className="space-y-1.5"><Label>Action</Label><Select value={form.action} onChange={(e) => setForm({ ...form, action: e.target.value })}>{ACTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</Select></div>
+              <div className="space-y-1.5"><Label>Trigger</Label><Select value={form.trigger} onChange={(e) => {
+                const trigger = e.target.value as AutomationTrigger;
+                const compatibleAction = form.action === "notify_team"
+                  || (form.action === "reply_comment" && trigger === "incoming_comment")
+                  || (form.action === "send_message" && trigger === "incoming_message");
+                const action = compatibleAction
+                  ? form.action
+                  : trigger === "incoming_message"
+                    ? "send_message"
+                    : trigger === "incoming_comment"
+                      ? "reply_comment"
+                      : "notify_team";
+                setForm({ ...form, trigger, action });
+              }}>{TRIGGERS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</Select></div>
+              <div className="space-y-1.5"><Label>Action</Label><Select value={form.action} onChange={(e) => setForm({ ...form, action: e.target.value })}>{ACTIONS.map((item) => {
+                  const incompatible = (item.value === "reply_comment" && form.trigger !== "incoming_comment")
+                    || (item.value === "send_message" && form.trigger !== "incoming_message");
+                  return <option key={item.value} value={item.value} disabled={item.disabled || incompatible}>{item.label}</option>;
+                })}</Select></div>
             </div>
             {(form.trigger === "incoming_comment" || form.trigger === "incoming_message") && (
               <div className="space-y-1.5"><Label>Keyword <span className="font-normal text-muted-foreground">(optional)</span></Label><Input value={form.keyword} onChange={(e) => setForm({ ...form, keyword: e.target.value })} placeholder="price" /></div>
@@ -331,7 +347,13 @@ export function AutomationPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button disabled={!form.name.trim()} onClick={() => void createRule()}>Create automation</Button>
+            <Button disabled={
+              !form.name.trim()
+              || form.action === "share_content"
+              || (["reply_comment", "send_message"].includes(form.action) && !form.message.trim())
+              || (form.action === "reply_comment" && form.trigger !== "incoming_comment")
+              || (form.action === "send_message" && form.trigger !== "incoming_message")
+            } onClick={() => void createRule()}>Create automation</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
