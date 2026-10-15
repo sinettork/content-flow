@@ -52,4 +52,7 @@ alter table public.notifications
 create unique index if not exists notifications_automation_run_recipient_key
   on public.notifications (automation_run_id, user_id);
 
+-- The worker uses service_role and upsert needs SELECT, INSERT, and UPDATE privileges.
+grant select, insert, update on public.notifications to service_role;
+
 commit;
