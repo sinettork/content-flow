@@ -141,6 +141,17 @@ export function AutomationPage() {
   };
 
   const toggleRule = async (rule: AutomationRule) => {
+    if (!rule.enabled) {
+      const readiness = dryRunRule(rule);
+      const failedChecks = readiness.checks.filter((check) => !check.passed);
+      if (failedChecks.length > 0) {
+        toast("Cannot enable automation", {
+          description: failedChecks.map((check) => `${check.label}: ${check.detail}`).join(" "),
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     try {
       await automationService.updateRule(rule.id, { enabled: !rule.enabled });
       await load();
@@ -359,12 +370,12 @@ export function AutomationPage() {
       </Dialog>
       <Dialog open={Boolean(dryRun)} onOpenChange={(value) => !value && setDryRun(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Automation safety check</DialogTitle><DialogDescription>Dry-run validation only. No event is created and no action is sent.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>Automation configuration check</DialogTitle><DialogDescription>Checks the configured trigger, actions, and conditions only. This does not execute actions or verify live provider access.</DialogDescription></DialogHeader>
           {dryRun && (() => {
             const rule = rules.find((item) => item.id === dryRun);
             if (!rule) return null;
             const result = dryRunRule(rule);
-            return <div className="space-y-2">{result.checks.map((check) => <div key={check.label} className="rounded border p-2 text-sm"><p className={check.passed ? "text-emerald-700" : "text-destructive"}>{check.passed ? "Pass" : "Review"} · {check.label}</p><p className="text-xs text-muted-foreground">{check.detail}</p></div>)}<Badge variant={result.safe ? "default" : "destructive"}>{result.safe ? "Safe to enable" : "Needs attention"}</Badge></div>;
+            return <div className="space-y-2">{result.checks.map((check) => <div key={check.label} className="rounded border p-2 text-sm"><p className={check.passed ? "text-emerald-700" : "text-destructive"}>{check.passed ? "Pass" : "Review"} · {check.label}</p><p className="text-xs text-muted-foreground">{check.detail}</p></div>)}<Badge variant={result.safe ? "default" : "destructive"}>{result.safe ? "Configuration valid" : "Needs attention"}</Badge></div>;
           })()}
           <DialogFooter><Button onClick={() => setDryRun(null)}>Close</Button></DialogFooter>
         </DialogContent>
