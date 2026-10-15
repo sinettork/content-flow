@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.112.3";
+import { safeAppReturnUrl } from "../_shared/safe-app-return-url.ts";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
@@ -33,7 +34,8 @@ Deno.serve(async (request) => {
     const allowedRoles = actor.role === "admin" ? ["admin", "manager", "editor", "viewer"] : ["editor", "viewer"];
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) throw new Error("A valid email is required.");
     if (!body.role || !allowedRoles.includes(body.role)) throw new Error("That role cannot be assigned.");
-    const redirectTo = body.redirectTo?.startsWith(appUrl) ? body.redirectTo : `${appUrl}/auth/sign-in`;
+    const safeRedirect = safeAppReturnUrl(body.redirectTo, appUrl);
+    const redirectTo = safeRedirect?.toString() ?? new URL("/auth/sign-in", appUrl).toString();
 
     const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo,
