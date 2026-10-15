@@ -60,7 +60,7 @@ VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_BROWSER_SAFE_PUBLISHABLE_KEY
 ```
 
-Never put a secret/service-role key in a `VITE_*` variable. Authenticated users without a workspace can create their first workspace from `/app/onboarding`; later members can be invited from Team.
+Never put a secret/service-role key in a `VITE_*` variable. Set `APP_URL` to the exact frontend origin (for example, `https://your-app.example`) for invitation and OAuth return URL validation. The Facebook and Monday.com OAuth flows reject return URLs outside this origin. Authenticated users without a workspace can create their first workspace from `/app/onboarding`; later members can be invited from Team.
 
 ### monday.com integration foundation
 
