@@ -1,5 +1,6 @@
 import { Upload, Trash2, Image, FileVideo, FileText, File, Folder, FolderOpen, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -8,8 +9,8 @@ import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
 import { fromNow } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -56,12 +57,14 @@ export function AssetsPage() {
   const workspaceId = useAuthStore((s) => s.profile?.workspace_id) ?? "";
   const userId = useAuthStore((s) => s.user?.id) ?? "";
   const inputRef = useRef<HTMLInputElement>(null);
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get("search") ?? "";
 
   const [assets, setAssets] = useState<ContentAsset[]>([]);
   const [assetUrls, setAssetUrls] = useState<Record<string, string>>({});
   const [selectedCategory, setSelectedCategory] = useState<"all" | ContentAsset["category"]>("all");
   const [uploadCategory, setUploadCategory] = useState<ContentAsset["category"]>("design");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
 
   const load = useCallback(async () => {
     const list = await assetService.listForWorkspace(workspaceId);
@@ -72,6 +75,7 @@ export function AssetsPage() {
 
   useEffect(() => { load(); }, [load]);
   useWorkspaceRealtime(workspaceId, load);
+  useEffect(() => { setQuery(initialQuery); }, [initialQuery]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -90,9 +94,10 @@ export function AssetsPage() {
     await load();
   };
 
-  const visibleAssets = selectedCategory === "all"
-    ? assets
-    : assets.filter((asset) => getAssetCategory(asset) === selectedCategory);
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleAssets = assets
+    .filter((asset) => selectedCategory === "all" || getAssetCategory(asset) === selectedCategory)
+    .filter((asset) => !normalizedQuery || asset.original_filename.toLowerCase().includes(normalizedQuery) || getAssetCategory(asset).includes(normalizedQuery));
 
   const categoryCounts = ASSET_CATEGORIES.reduce<Record<ContentAsset["category"], number>>((acc, category) => {
     acc[category.value] = assets.filter((asset) => getAssetCategory(asset) === category.value).length;

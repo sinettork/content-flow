@@ -1,0 +1,7 @@
+# Credential-free follow-up TODO
+
+- [x] Replace the browser-native prompt used by “Save current view” with an application dialog. The dialog provides a labeled name input; rejects empty or whitespace-only names; saves the trimmed name with current filters through the existing saved-view store; and closes without saving when canceled or dismissed. Evidence: no browser-native prompt/confirm/alert calls remain in `src`; targeted ESLint, tests, typecheck, and production build pass.
+- [x] Expand Search into true global search across content, campaigns, people, assets, and commands. Results are limited to the signed-in workspace using existing services; keyboard up/down/Enter navigation and clickable results work; record results open the matching content/campaign or filtered asset/team page; navigation commands remain searchable; and creating new content is offered only to users with create permission. Evidence: three unit tests cover cross-category matching, workspace isolation, blank queries, and permission-aware commands; typecheck and production build pass.
+- [ ] Consider making platform configuration reusable as a dedicated editor when platform-specific copy becomes more advanced.
+- [ ] Add usability tests for a first-time user completing: create → configure platform → review → approve → schedule → publish.
+- [ ] Run a visual QA pass at desktop, tablet, and mobile widths after the local build.

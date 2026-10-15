@@ -5,19 +5,21 @@ import { Link, useNavigate } from "react-router-dom";
 import { CampaignBadge } from "@/components/campaigns/CampaignBadge";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
-import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { ContentStatusBadge } from "@/components/content/ContentStatusBadge";
+import { ContentWorkspaceNav } from "@/components/content/ContentWorkspaceNav";
 import { PlatformBadge } from "@/components/content/PlatformBadge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePermission, useRole } from "@/hooks/usePermission";
 import { useWorkspaceRealtime } from "@/hooks/useWorkspaceRealtime";
-import { MASTER_STATUSES, PLATFORMS , STATUS_ACCENTS } from "@/lib/constants";
+import { MASTER_STATUSES, PLATFORMS, STATUS_ACCENTS } from "@/lib/constants";
 import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { contentService, campaignService, platformService, profileService } from "@/services";
@@ -36,6 +38,8 @@ export function ContentListPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [platformMap, setPlatformMap] = useState<Record<string, ContentPlatform[]>>({});
   const [selected, setSelected] = useState<string[]>([]);
+  const [saveViewOpen, setSaveViewOpen] = useState(false);
+  const [saveViewName, setSaveViewName] = useState("");
   const { role } = useRole();
   const canBulkEdit = usePermission("editContent");
 
@@ -85,6 +89,14 @@ export function ContentListPage() {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const saveCurrentView = () => {
+    const name = saveViewName.trim();
+    if (!name) return;
+    saveContentView(name);
+    setSaveViewOpen(false);
+    setSaveViewName("");
   };
 
   return (
@@ -209,11 +221,35 @@ export function ContentListPage() {
             <Select value="" onChange={(e) => { const view = savedContentViews.find((item) => item.id === e.target.value); if (view) setContentFilters(view.filters); }}>
               <option value="">Saved views</option>{savedContentViews.map((view) => <option key={view.id} value={view.id}>{view.name}</option>)}
             </Select>
-            <Button variant="outline" size="sm" onClick={() => { const name = window.prompt("Name this view"); if (name?.trim()) saveContentView(name); }}>Save current view</Button>
+            <Button variant="outline" size="sm" onClick={() => { setSaveViewName(""); setSaveViewOpen(true); }}>Save current view</Button>
             {savedContentViews.length > 0 && <Button variant="ghost" size="sm" onClick={() => { const view = savedContentViews.find((item) => item.filters.search === contentFilters.search && item.filters.status === contentFilters.status); if (view) deleteContentView(view.id); }}>Remove matching view</Button>}
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={saveViewOpen} onOpenChange={(open) => { setSaveViewOpen(open); if (!open) setSaveViewName(""); }}>
+        <DialogContent>
+          <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); saveCurrentView(); }}>
+            <DialogHeader>
+              <DialogTitle>Save current view</DialogTitle>
+              <DialogDescription>Name this filter combination. Saving an existing name replaces that view’s filters.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-4">
+              <Label htmlFor="saved-content-view-name">View name</Label>
+              <Input
+                id="saved-content-view-name"
+                value={saveViewName}
+                onChange={(event) => setSaveViewName(event.target.value)}
+                placeholder="e.g. Needs review"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setSaveViewOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={!saveViewName.trim()}>Save view</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {canBulkEdit && selected.length > 0 && <Card className="mb-4 border-primary/30"><CardContent className="flex flex-wrap items-center gap-2 p-3"><CheckSquare className="h-4 w-4 text-primary" /><span className="mr-2 text-sm font-medium">{selected.length} selected</span><Select value="" onChange={(e) => { if (e.target.value) void applyBulk({ master_status: e.target.value as ContentItem["master_status"] }); }}><option value="">Set status…</option>{MASTER_STATUSES.map((status) => <option key={status} value={status}>{status.replace(/_/g, " ")}</option>)}</Select><Select value="" onChange={(e) => { if (e.target.value) void applyBulk({ assigned_to: e.target.value === "__none" ? null : e.target.value }); }}><option value="">Assign to…</option><option value="__none">Unassigned</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.full_name}</option>)}</Select><Button variant="ghost" size="sm" onClick={() => setSelected([])}>Clear</Button></CardContent></Card>}
 

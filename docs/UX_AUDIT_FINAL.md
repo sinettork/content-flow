@@ -59,11 +59,11 @@ The UX should keep the user oriented, surface the next useful action, minimize h
 - The audit intentionally avoids large visual restyling because the current visual system is already coherent.
 
 ## High-priority follow-up after this audit
-1. Replace any remaining browser-native prompts with application dialogs.
-2. Expand Search into true global search across content, campaigns, people, assets, and commands.
-3. Consider making platform configuration reusable as a dedicated editor when platform-specific copy becomes more advanced.
-4. Add usability tests for a first-time user completing: create → configure platform → review → approve → schedule → publish.
-5. Run a visual QA pass at desktop, tablet, and mobile widths after the local build.
+- [x] Replace any remaining browser-native prompts with application dialogs. The saved-content-view action now uses the application Dialog; a source search found no remaining browser-native prompt/confirm/alert calls.
+- [x] Expand Search into true global search across content, campaigns, people, assets, and commands. Results are workspace-scoped, keyboard accessible, and open matching records or filtered workspace pages.
+1. Consider making platform configuration reusable as a dedicated editor when platform-specific copy becomes more advanced.
+2. Add usability tests for a first-time user completing: create → configure platform → review → approve → schedule → publish.
+3. Run a visual QA pass at desktop, tablet, and mobile widths after the local build.
 
 ## Completion
 

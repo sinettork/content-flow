@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -32,8 +32,10 @@ function initials(name: string) {
 export function TeamPage() {
   const workspaceId = useAuthStore((s) => s.profile?.workspace_id) ?? "";
   const currentRole = useAuthStore((s) => s.profile?.role);
+  const [searchParams] = useSearchParams();
 
   const [members, setMembers] = useState<Profile[]>([]);
+  const [memberQuery, setMemberQuery] = useState(() => searchParams.get("search") ?? "");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<Role>("viewer");
   const [inviting, setInviting] = useState(false);
@@ -44,6 +46,13 @@ export function TeamPage() {
   }, [workspaceId]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setMemberQuery(searchParams.get("search") ?? ""); }, [searchParams]);
+
+  const normalizedMemberQuery = memberQuery.trim().toLowerCase();
+  const visibleMembers = members.filter((member) =>
+    !normalizedMemberQuery || [member.full_name, member.email, member.job_title, member.role]
+      .some((value) => value?.toLowerCase().includes(normalizedMemberQuery))
+  );
 
   const handleRoleChange = async (profileId: string, role: Role) => {
     try {
@@ -95,8 +104,21 @@ export function TeamPage() {
         </Card>
       )}
 
+      {members.length > 0 && (
+        <div className="mb-4 max-w-xl">
+          <Input
+            value={memberQuery}
+            onChange={(event) => setMemberQuery(event.target.value)}
+            placeholder="Search name, email, job title, or role..."
+            aria-label="Search team members"
+          />
+        </div>
+      )}
+
       {members.length === 0 ? (
         <EmptyState title="No team members" description="Invite people to your workspace." />
+      ) : visibleMembers.length === 0 ? (
+        <EmptyState title="No team members found" description="Try another name, email, job title, or role." />
       ) : (
         <Card>
           <div className="overflow-x-auto"><Table>
@@ -109,7 +131,7 @@ export function TeamPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-                {members.map((m) => {
+                {visibleMembers.map((m) => {
                   const canEditRow =
                     currentRole === "admin" ||
                     (currentRole === "manager" && m.role !== "admin" && m.role !== "manager");
