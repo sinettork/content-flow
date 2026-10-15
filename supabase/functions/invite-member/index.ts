@@ -4,13 +4,26 @@ import { safeAppReturnUrl } from "../_shared/safe-app-return-url.ts";
 const jsonHeaders = { "Content-Type": "application/json" };
 
 Deno.serve(async (request) => {
-  const appUrl = Deno.env.get("APP_URL") ?? "http://localhost:5173";
+  const configuredAppUrl = Deno.env.get("APP_URL");
+  const appUrl = (() => {
+    try {
+      return configuredAppUrl ? new URL(configuredAppUrl).origin : null;
+    } catch {
+      return null;
+    }
+  })();
   const origin = request.headers.get("origin");
   const corsHeaders = {
-    "Access-Control-Allow-Origin": origin === appUrl ? origin : appUrl,
+    "Access-Control-Allow-Origin": origin && appUrl && origin === appUrl ? origin : (appUrl ?? "null"),
     "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (!configuredAppUrl || !appUrl) {
+    return new Response(JSON.stringify({ error: "APP_URL is not configured." }), {
+      status: 503, headers: { ...corsHeaders, ...jsonHeaders },
+    });
+  }
 
   try {
     const authorization = request.headers.get("Authorization");
