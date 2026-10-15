@@ -61,9 +61,9 @@ The UX should keep the user oriented, surface the next useful action, minimize h
 ## High-priority follow-up after this audit
 - [x] Replace any remaining browser-native prompts with application dialogs. The saved-content-view action now uses the application Dialog; a source search found no remaining browser-native prompt/confirm/alert calls.
 - [x] Expand Search into true global search across content, campaigns, people, assets, and commands. Results are workspace-scoped, keyboard accessible, and open matching records or filtered workspace pages.
-1. Consider making platform configuration reusable as a dedicated editor when platform-specific copy becomes more advanced.
-2. Add usability tests for a first-time user completing: create → configure platform → review → approve → schedule → publish.
-3. Run a visual QA pass at desktop, tablet, and mobile widths after the local build.
+- [x] Add a mock-only Playwright workflow test covering editor create/configure/review, manager approval, scheduling, and the app's simulated published status; verify no provider API requests occur.
+- [x] Run visual QA at desktop (1440 px), tablet (820 px), and mobile (390 px). The pass found and fixed the saved-view dialog's mobile width overflow; layout and dialog bounds now pass at all three sizes.
+- [ ] Revisit a dedicated platform editor when per-platform configuration grows beyond the current caption and hashtags fields.
 
 ## Completion
 

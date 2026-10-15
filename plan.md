@@ -2,17 +2,22 @@
 
 ## Scope
 
-Prepare ContentFlow features that do not require live provider workers or credentials. Do not connect Meta, request secrets, or deploy provider functions in this phase. Follow the next credential-free UX outcomes from `docs/UX_AUDIT_FINAL.md`: replace the remaining browser-native prompt, then expand the command palette into global workspace search.
+Prepare ContentFlow features that do not require live provider workers or credentials. Do not connect Meta, request secrets, or deploy provider functions. The saved-view dialog and global workspace search are complete. The next outcome is a first-time user's full content workflow, exercised only against the app's seeded mock backend.
 
-## Implementation approach
+## Workflow-test design
 
-The saved-view flow reuses the existing Radix-based application Dialog, Input, Label, Button, and `useUiStore.saveContentView` behavior. Global search reuses the existing command-palette shell and keyboard controls, gathers content, campaigns, workspace members, and workspace assets through existing services, and combines these with a static navigation/action command catalog. Result construction and matching live in a small pure helper with unit tests. Search results navigate to the corresponding content/campaign detail or to the assets/team pages with a prefilled search query. The current visual system and dependencies remain unchanged.
+Add a Playwright end-to-end test using only `VITE_DATA_BACKEND=mock` and isolated browser local storage. The test signs in as a demo editor, creates a draft, selects Facebook, adds platform-specific caption and hashtags, assigns a campaign and owner, chooses a future publish date/time, and submits the content for review. It then signs out, signs in as a demo manager, approves the item, and moves it through the app's schedule and “Mark as published” actions. The final action records the app's internal demo status only; it must not call a provider API, create a real post, or use credentials. The test verifies each intermediate state and saved platform copy, runs against an isolated local server, and documents how to install/run its browser dependency.
 
 ## Relevant project structure
 
-- `src/features/content/ContentListPage.tsx` owns filter controls and the Save current view action; `src/stores/ui-store.ts` persists saved views.
-- `src/components/common/SearchCommand.tsx` owns the existing command palette and keyboard navigation.
-- `src/lib/global-search.ts` builds typed, query-matched results from the existing workspace data models.
-- `src/services/` provides content, campaign, profile, and asset data through the current mock or Supabase adapter.
-- `src/features/assets/AssetsPage.tsx` and `src/features/team/TeamPage.tsx` consume search query parameters so global results open at the matching record.
-- `docs/UX_AUDIT_FINAL.md` is the source for the remaining credential-free follow-up backlog.
+- `src/features/content/ContentFormPage.tsx` creates the draft, saves the platform copy, and exposes the schedule time picker.
+- `src/features/content/ContentDetailPage.tsx` exposes review, schedule, and mock “Mark as published” status transitions.
+- `src/features/operations/OperationsPage.tsx` exposes manager approval.
+- `src/lib/mock/seed.ts` supplies demo editor/manager users and a seeded workspace.
+- `src/lib/backend.ts` selects the mock backend when `VITE_DATA_BACKEND=mock`.
+- `playwright.config.ts` starts a dedicated Vite mock-mode server; `e2e/content-lifecycle.e2e.ts` exercises the user flow.
+- `package.json`, `package-lock.json`, `TODO.md`, and `docs/UX_AUDIT_FINAL.md` record the test command and outcome.
+
+## Outcome
+
+As of 2026-10-15, all four Playwright tests pass: one full lifecycle test plus desktop, tablet, and mobile responsive checks. The lifecycle test records zero requests to social-provider APIs. Visual inspection at 1440×960, 820×1024, and 390×844 found an oversized shared dialog on mobile; `DialogContent` now constrains its width and height to the viewport, and the saved-view dialog fits at all three sizes. A dedicated platform editor remains deferred because current per-platform configuration is limited to caption and hashtags.
