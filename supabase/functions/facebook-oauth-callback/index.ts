@@ -76,6 +76,22 @@ Deno.serve(async (req) => {
     return new Response("Invalid or expired OAuth state", { status: 400 });
   }
 
+  const { data: currentProfile, error: currentProfileError } = await db
+    .from("profiles")
+    .select("workspace_id,role")
+    .eq("id", oauthState.user_id)
+    .maybeSingle();
+  if (
+    currentProfileError ||
+    currentProfile?.workspace_id !== oauthState.workspace_id ||
+    (currentProfile?.role !== "admin" && currentProfile?.role !== "manager")
+  ) {
+    return Response.redirect(
+      redirectUrl(oauthState.return_url, false) ?? new URL("/", req.url).toString(),
+      302,
+    );
+  }
+
   if (oauthError || !code) {
     return Response.redirect(
       redirectUrl(oauthState.return_url, false) ?? new URL("/", req.url).toString(),
@@ -143,6 +159,7 @@ Deno.serve(async (req) => {
             credentials_ref: stored.data,
             status: "active",
             metadata: facebookMetadata,
+            last_insights_sync_started_at: null,
             updated_at: new Date().toISOString(),
             created_by: oauthState.user_id,
           })

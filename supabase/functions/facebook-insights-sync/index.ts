@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
   const { data: connection, error: connectionError } = await db
     .from("social_connections")
-    .select("id,workspace_id,provider,account_type,external_account_id,status,credentials_ref,last_insights_synced_at")
+    .select("id,workspace_id,provider,account_type,external_account_id,status,credentials_ref")
     .eq("id", connectionId)
     .eq("workspace_id", profile.workspace_id)
     .eq("provider", "facebook")
@@ -77,12 +77,12 @@ Deno.serve(async (req) => {
   if (connectionError || !connection) return json({ error: "That active Facebook Page is not available in your workspace. Reconnect it if needed." }, 404);
   if (!connection.credentials_ref) return json({ error: "The Page token is missing. Reconnect Meta from Automation." }, 409);
 
-  const cooldownMs = 5 * 60 * 1000;
-  const lastInsightsSync = connection.last_insights_synced_at ? Date.parse(connection.last_insights_synced_at) : Number.NaN;
-  if (Number.isFinite(lastInsightsSync) && Date.now() - lastInsightsSync < cooldownMs) {
-    const secondsLeft = Math.ceil((cooldownMs - (Date.now() - lastInsightsSync)) / 1000);
-    return json({ error: `This Page was synced recently. Try again in about ${Math.max(1, Math.ceil(secondsLeft / 60))} minute(s).` }, 429);
-  }
+  const { data: claimed, error: claimError } = await db.rpc("claim_facebook_insights_sync", {
+    p_workspace_id: profile.workspace_id,
+    p_connection_id: connection.id,
+  });
+  if (claimError) return json({ error: "Could not reserve a sync slot for this Page." }, 500);
+  if (claimed !== true) return json({ error: "This Page is already syncing or was synced within five minutes. Try again later." }, 429);
 
   const { data: pageToken, error: tokenError } = await db.rpc("read_social_secret", { p_id: connection.credentials_ref });
   if (tokenError || typeof pageToken !== "string" || !pageToken) {
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
 
   let metrics: MetaInsightMetric[];
   try {
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${pageToken}` } });
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${pageToken}` }, signal: AbortSignal.timeout(20_000) });
     const payload = await response.json().catch(() => ({})) as {
       data?: MetaInsightMetric[];
       error?: { code?: number; message?: string };
@@ -138,11 +138,11 @@ Deno.serve(async (req) => {
     updated_at: syncedAt,
   }));
 
+  let syncedDays = 0;
   if (rows.length) {
-    const { error: upsertError } = await db
-      .from("facebook_page_insights_daily")
-      .upsert(rows, { onConflict: "workspace_id,connection_id,metric_date" });
+    const { data: savedDays, error: upsertError } = await db.rpc("upsert_facebook_page_insights", { p_rows: rows });
     if (upsertError) return json({ error: "Meta data was received but could not be saved. Check the database migration and try again." }, 500);
+    syncedDays = typeof savedDays === "number" ? savedDays : rows.length;
   }
 
   const { error: connectionUpdateError } = await db
@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
     days,
     since: sinceDate,
     through,
-    synced_days: rows.length,
+    synced_days: syncedDays,
     synced_at: syncedAt,
   });
 });

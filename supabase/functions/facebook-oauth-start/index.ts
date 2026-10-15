@@ -8,7 +8,8 @@ Deno.serve(async req=>{
  const token=(req.headers.get("authorization")??"").replace(/^Bearer\s+/,"");
  if(!token)return Response.json({error:"Unauthorized"},{status:401});
  const {data:u,error:ue}=await db.auth.getUser(token); if(ue||!u.user)return Response.json({error:"Unauthorized"},{status:401});
- const {data:p,error:pe}=await db.from("profiles").select("workspace_id").eq("id",u.user.id).maybeSingle(); if(pe||!p)return Response.json({error:"Workspace not found"},{status:403});
+ const {data:p,error:pe}=await db.from("profiles").select("workspace_id,role").eq("id",u.user.id).maybeSingle(); if(pe||!p?.workspace_id)return Response.json({error:"Workspace not found"},{status:403});
+ if(p.role!=="admin"&&p.role!=="manager")return Response.json({error:"Only workspace admins and managers can connect Meta."},{status:403});
  const appId=Deno.env.get("META_APP_ID"); const redirect=Deno.env.get("META_REDIRECT_URI");
  if(!appId||!redirect)return Response.json({error:"META_APP_ID and META_REDIRECT_URI are not configured"},{status:503});
  const body=await req.json().catch(()=>({})); const returnUrl=typeof body?.return_url==="string"?body.return_url:"";
