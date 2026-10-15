@@ -1,15 +1,29 @@
 import { createClient } from "npm:@supabase/supabase-js@2.112.3";
+import { safeAppReturnUrl } from "../_shared/safe-app-return-url.ts";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 
 Deno.serve(async (request) => {
-  const appUrl = Deno.env.get("APP_URL") ?? "http://localhost:5173";
+  const configuredAppUrl = Deno.env.get("APP_URL");
+  const appUrl = (() => {
+    try {
+      return configuredAppUrl ? new URL(configuredAppUrl).origin : null;
+    } catch {
+      return null;
+    }
+  })();
   const origin = request.headers.get("origin");
   const corsHeaders = {
-    "Access-Control-Allow-Origin": origin === appUrl ? origin : appUrl,
+    "Access-Control-Allow-Origin": origin && appUrl && origin === appUrl ? origin : (appUrl ?? "null"),
     "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (!configuredAppUrl || !appUrl) {
+    return new Response(JSON.stringify({ error: "APP_URL is not configured." }), {
+      status: 503, headers: { ...corsHeaders, ...jsonHeaders },
+    });
+  }
 
   try {
     const authorization = request.headers.get("Authorization");
@@ -33,7 +47,8 @@ Deno.serve(async (request) => {
     const allowedRoles = actor.role === "admin" ? ["admin", "manager", "editor", "viewer"] : ["editor", "viewer"];
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) throw new Error("A valid email is required.");
     if (!body.role || !allowedRoles.includes(body.role)) throw new Error("That role cannot be assigned.");
-    const redirectTo = body.redirectTo?.startsWith(appUrl) ? body.redirectTo : `${appUrl}/auth/sign-in`;
+    const safeRedirect = safeAppReturnUrl(body.redirectTo, appUrl);
+    const redirectTo = safeRedirect?.toString() ?? new URL("/auth/sign-in", appUrl).toString();
 
     const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo,

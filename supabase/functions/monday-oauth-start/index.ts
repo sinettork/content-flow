@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { safeAppReturnUrl } from "../_shared/safe-app-return-url.ts";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 const digest = async (value: string) => {
@@ -17,9 +18,10 @@ Deno.serve(async (request) => {
   const { data: profile } = await db.from("profiles").select("workspace_id").eq("id", data.user.id).maybeSingle();
   if (!profile) return Response.json({ error: "Workspace not found" }, { status: 403 });
   const body = await request.json().catch(() => ({}));
-  let returnUrl: URL;
-  try { returnUrl = new URL(typeof body?.return_url === "string" ? body.return_url : ""); } catch { return Response.json({ error: "Invalid return_url" }, { status: 400 }); }
-  if (returnUrl.protocol !== "https:" && !(returnUrl.protocol === "http:" && returnUrl.hostname === "localhost")) return Response.json({ error: "Invalid return_url" }, { status: 400 });
+  const appUrl = Deno.env.get("APP_URL");
+  if (!appUrl) return Response.json({ error: "APP_URL is not configured" }, { status: 503 });
+  const returnUrl = safeAppReturnUrl(body?.return_url, appUrl);
+  if (!returnUrl) return Response.json({ error: "return_url must use the configured application origin" }, { status: 400 });
   const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const challenge = await digest(verifier);
   const state = base64url(crypto.getRandomValues(new Uint8Array(32)));
@@ -33,3 +35,4 @@ Deno.serve(async (request) => {
   url.searchParams.set("client_id", clientId); url.searchParams.set("redirect_uri", redirect); url.searchParams.set("response_type", "code"); url.searchParams.set("state", state); url.searchParams.set("code_challenge", challenge); url.searchParams.set("code_challenge_method", "S256");
   return Response.json({ authorization_url: url.toString() });
 });
+  
